@@ -38,7 +38,7 @@ class ApplicationServiceImplTest {
     }
 
     @Test
-    void createsPreparingApplication() {
+    void createsAppliedApplication() {
         when(applicationMapper.selectCount(any())).thenReturn(0);
         ApplicationCreateDTO input = new ApplicationCreateDTO();
         input.setJobId(4L);
@@ -46,7 +46,8 @@ class ApplicationServiceImplTest {
 
         ApplicationVO result = applicationService.create(1L, input);
 
-        assertEquals("PREPARING", result.getStatus());
+        assertEquals("APPLIED", result.getStatus());
+        assertNotNull(result.getAppliedAt());
         assertEquals("全栈开发实习生", result.getJob().getTitle());
         verify(applicationMapper).insert(any(ApplicationRecord.class));
     }

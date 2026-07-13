@@ -50,8 +50,9 @@ public class ApplicationServiceImpl implements ApplicationRecordService {
         ApplicationRecord record = new ApplicationRecord();
         record.setUserId(userId);
         record.setJobId(input.getJobId());
-        record.setStatus("PREPARING");
+        record.setStatus("APPLIED");
         record.setProgressNote(valueOrEmpty(input.getProgressNote()));
+        record.setAppliedAt(now);
         record.setCreatedAt(now);
         record.setUpdatedAt(now);
         applicationMapper.insert(record);
