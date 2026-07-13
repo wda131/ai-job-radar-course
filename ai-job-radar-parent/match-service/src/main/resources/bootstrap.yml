@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: match-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/ai_job_radar?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    username: root
+    password: root
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      discovery:
+        enabled: true
+        ip: 127.0.0.1
+        namespace: public
+        group: DEFAULT_GROUP
+      config:
+        enabled: false
+
+server:
+  port: 9003
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 3000
+        readTimeout: 5000

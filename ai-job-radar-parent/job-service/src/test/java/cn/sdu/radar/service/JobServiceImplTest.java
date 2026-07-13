@@ -1,0 +1,96 @@
+package cn.sdu.radar.service;
+
+import cn.sdu.radar.exception.BusinessException;
+import cn.sdu.radar.mapper.JobMapper;
+import cn.sdu.radar.pojo.Job;
+import cn.sdu.radar.service.impl.JobServiceImpl;
+import cn.sdu.radar.vo.JobSummaryVO;
+import cn.sdu.radar.vo.PageResult;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class JobServiceImplTest {
+
+    private JobMapper jobMapper;
+    private JobServiceImpl jobService;
+    private Job job;
+
+    @BeforeEach
+    void setUp() {
+        jobMapper = mock(JobMapper.class);
+        jobService = new JobServiceImpl(jobMapper);
+        job = new Job();
+        job.setId(10L);
+        job.setTitle("Java后端开发实习生");
+        job.setCompany("海纳科技");
+        job.setCity("威海");
+        job.setSalaryMin(5000);
+        job.setSalaryMax(7000);
+        job.setExperienceYears(0);
+        job.setEducation("本科");
+        job.setDescription("参与业务系统开发");
+        job.setRequirements("Java,Spring Boot,MySQL");
+        job.setWelfareTags("双休,导师制");
+        job.setStatus("OPEN");
+        job.setPostedAt(LocalDateTime.now());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void searchBuildsFiltersAndReturnsPage() {
+        when(jobMapper.selectPage(any(Page.class), any(QueryWrapper.class)))
+                .thenAnswer(invocation -> {
+                    Page<Job> page = invocation.getArgument(0);
+                    page.setRecords(Collections.singletonList(job));
+                    page.setTotal(1);
+                    return page;
+                });
+
+        PageResult<JobSummaryVO> result = jobService.search(
+                "Java", "威海", 5000, 1, 8);
+
+        assertEquals(1, result.getRecords().size());
+        assertEquals("海纳科技", result.getRecords().get(0).getCompany());
+        assertEquals(1, result.getTotal());
+
+        ArgumentCaptor<QueryWrapper<Job>> wrapperCaptor = ArgumentCaptor.forClass(QueryWrapper.class);
+        verify(jobMapper).selectPage(any(Page.class), wrapperCaptor.capture());
+        String sql = wrapperCaptor.getValue().getSqlSegment();
+        assertTrue(sql.contains("title"));
+        assertTrue(sql.contains("company"));
+        assertTrue(sql.contains("city"));
+        assertTrue(sql.contains("salary_min"));
+    }
+
+    @Test
+    void searchRejectsInvalidPagination() {
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> jobService.search("", "", null, 0, 100));
+
+        assertEquals(400, exception.getCode());
+    }
+
+    @Test
+    void getByIdRejectsMissingJob() {
+        when(jobMapper.selectById(99L)).thenReturn(null);
+
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> jobService.getById(99L));
+
+        assertEquals(404, exception.getCode());
+    }
+}
