@@ -19,7 +19,7 @@ defineEmits(['match', 'favorite', 'apply', 'interview'])
     <p class="job-desc">{{ job.description }}</p>
     <div class="card-actions">
       <button type="button" class="btn primary" @click="$emit('match', job)">AI 匹配</button>
-      <button type="button" class="btn ghost" :class="{ selected: favorited }" :aria-pressed="favorited" @click="$emit('favorite', job)">{{ favorited ? '已收藏' : '收藏' }}</button>
+      <button type="button" class="btn ghost" :class="{ selected: favorited }" :aria-pressed="favorited" @click="$emit('favorite', job)">{{ favorited ? '✓ 已收藏' : '收藏' }}</button>
       <button type="button" class="btn ghost" :class="{ completed: applied }" :disabled="applied" @click="$emit('apply', job)">{{ applied ? '已投递' : '投递' }}</button>
       <button type="button" class="icon-btn" title="模拟面试" @click="$emit('interview', job)">◫</button>
     </div>
@@ -28,10 +28,11 @@ defineEmits(['match', 'favorite', 'apply', 'interview'])
 
 <style scoped>
 .card-actions .selected {
-  color: #8ff0c7;
-  border-color: #53d28c;
-  background: #53d28c18;
-  box-shadow: inset 0 0 0 1px #53d28c22;
+  color: #061810;
+  border-color: #74e3b3;
+  background: linear-gradient(135deg, #53d28c, #76e5bc);
+  box-shadow: 0 7px 18px #53d28c30;
+  font-weight: 800;
 }
 .card-actions .completed {
   color: #8ff0c7;

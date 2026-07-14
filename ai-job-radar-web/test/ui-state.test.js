@@ -1,7 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { chooseInterviewSessionId, jobActionState } from '../src/utils/uiState.js'
+import {
+  chooseInterviewQuestionId,
+  chooseInterviewSessionId,
+  jobActionState
+} from '../src/utils/uiState.js'
 
 test('marks favorited and applied jobs', () => {
   assert.deepEqual(jobActionState(7, new Set([7]), new Set([7])), {
@@ -34,6 +38,49 @@ test('keeps snowflake interview ids precise as strings', () => {
     chooseInterviewSessionId(sessions, '2076675828967198721'),
     '2076675828967198721'
   )
+})
+
+test('opens any requested interview question and defaults to the first unanswered one', () => {
+  const questions = [
+    { id: '2077017040966352898', answer: { score: 82 } },
+    { id: '2077017040966352899', answer: null },
+    { id: '2077017040966352900', answer: null },
+    { id: '2077017040966352901', answer: null }
+  ]
+
+  assert.equal(chooseInterviewQuestionId(questions), '2077017040966352899')
+  assert.equal(
+    chooseInterviewQuestionId(questions, '2077017040966352901'),
+    '2077017040966352901'
+  )
+  assert.equal(chooseInterviewQuestionId(questions, 'missing'), '2077017040966352899')
+})
+
+test('keeps completed interview questions available for review', () => {
+  const questions = [
+    { id: '31', answer: { score: 80 } },
+    { id: '32', answer: { score: 90 } }
+  ]
+
+  assert.equal(chooseInterviewQuestionId(questions), '31')
+  assert.equal(chooseInterviewQuestionId([], null), null)
+})
+
+test('makes every interview question selectable and keeps answered questions reviewable', () => {
+  const view = readFileSync(new URL('../src/views/InterviewsView.vue', import.meta.url), 'utf8')
+  const selectionHandlers = view.match(/@click="selectQuestion\(question\)"/g) || []
+
+  assert.equal(selectionHandlers.length, 2)
+  assert.match(view, /selectedQuestion\.answer/)
+  assert.match(view, /本题回答与反馈/)
+})
+
+test('renders an unmistakable selected state for favorited jobs', () => {
+  const card = readFileSync(new URL('../src/components/JobCard.vue', import.meta.url), 'utf8')
+
+  assert.match(card, /favorited \? '✓ 已收藏' : '收藏'/)
+  assert.match(card, /\.card-actions \.selected[\s\S]*background: linear-gradient/)
+  assert.match(card, /:aria-pressed="favorited"/)
 })
 
 test('exposes the notification center through api router and navigation', () => {

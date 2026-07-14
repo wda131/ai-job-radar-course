@@ -4,30 +4,48 @@ import { useRoute } from 'vue-router'
 import { answerInterview, getInterview, getInterviews } from '../api'
 import NoticeBar from '../components/NoticeBar.vue'
 import PageHeader from '../components/PageHeader.vue'
-import { chooseInterviewSessionId } from '../utils/uiState'
+import { chooseInterviewQuestionId, chooseInterviewSessionId } from '../utils/uiState'
 
 const route = useRoute()
 const sessions = ref([])
 const active = ref(null)
+const selectedQuestionId = ref(null)
 const answer = ref('')
 const notice = ref('')
-const current = computed(() => active.value?.questions?.find(question => !question.answer))
+const selectedQuestion = computed(() => active.value?.questions?.find(
+  question => String(question.id) === String(selectedQuestionId.value)
+))
+const completed = computed(() => active.value?.questions?.every(question => question.answer))
 
 const load = async () => sessions.value = await getInterviews()
-const open = async session => active.value = await getInterview(session.id)
+const setActive = session => {
+  active.value = session
+  selectedQuestionId.value = chooseInterviewQuestionId(session.questions)
+  answer.value = ''
+}
+const open = async session => setActive(await getInterview(session.id))
+const selectQuestion = question => {
+  selectedQuestionId.value = question.id
+  answer.value = ''
+}
 
 const initialize = async () => {
   await load()
   const sessionId = chooseInterviewSessionId(sessions.value, route.query.session)
-  if (sessionId) active.value = await getInterview(sessionId)
+  if (sessionId) setActive(await getInterview(sessionId))
 }
 
 const submit = async () => {
-  if (!answer.value.trim()) return
+  if (!selectedQuestion.value || selectedQuestion.value.answer || !answer.value.trim()) return
   try {
-    await answerInterview(active.value.id, { questionId: current.value.id, answer: answer.value })
+    await answerInterview(active.value.id, {
+      questionId: selectedQuestion.value.id,
+      answer: answer.value
+    })
     answer.value = ''
-    await open(active.value)
+    const refreshed = await getInterview(active.value.id)
+    active.value = refreshed
+    selectedQuestionId.value = chooseInterviewQuestionId(refreshed.questions)
     await load()
     notice.value = '回答已评分'
   } catch (error) {
@@ -62,27 +80,36 @@ onMounted(initialize)
           <span class="status-chip">{{ active.status === 'COMPLETED' ? '已完成' : '进行中' }}</span>
         </header>
 
-        <div class="question-steps">
-          <i v-for="question in active.questions" :key="question.id" :class="{ done: question.answer, current: current?.id === question.id }">{{ question.questionOrder }}</i>
+        <div class="question-steps" aria-label="面试题目导航">
+          <button v-for="question in active.questions" :key="question.id" type="button" :aria-label="`打开第${question.questionOrder}题`" @click="selectQuestion(question)">
+            <i :class="{ done: question.answer, current: selectedQuestion?.id === question.id }">{{ question.questionOrder }}</i>
+          </button>
         </div>
 
         <div class="question-overview">
-          <article v-for="question in active.questions" :key="question.id" :class="{ done: question.answer, current: current?.id === question.id }">
+          <button v-for="question in active.questions" :key="question.id" type="button" class="question-card" :class="{ done: question.answer, current: selectedQuestion?.id === question.id }" @click="selectQuestion(question)">
             <span>0{{ question.questionOrder }}</span>
             <p>{{ question.question }}</p>
-            <b>{{ question.answer ? '已完成' : current?.id === question.id ? '当前题' : '待回答' }}</b>
-          </article>
+            <b>{{ question.answer ? selectedQuestion?.id === question.id ? '查看反馈' : '已完成' : selectedQuestion?.id === question.id ? '当前题' : '待回答' }}</b>
+          </button>
         </div>
 
-        <div v-if="current" class="question-box">
-          <small>QUESTION {{ current.questionOrder }} / {{ active.questions.length }}</small>
-          <h2>{{ current.question }}</h2>
+        <div v-if="completed" class="result-box compact-result">
+          <span>✓</span><h2>本轮练习已完成</h2><strong>{{ active.totalScore }} 分</strong><p>点击上方任意题目，可查看回答、评分和改进建议。</p>
+        </div>
+
+        <div v-if="selectedQuestion && !selectedQuestion.answer" class="question-box">
+          <small>QUESTION {{ selectedQuestion.questionOrder }} / {{ active.questions.length }}</small>
+          <h2>{{ selectedQuestion.question }}</h2>
           <textarea v-model="answer" rows="7" placeholder="结合具体经历作答，尽量包含技术方法、行动过程和结果…"></textarea>
           <div><span>{{ answer.length }} 字</span><button class="btn primary" @click="submit">提交并获取反馈 →</button></div>
         </div>
 
-        <div v-else class="result-box">
-          <span>✓</span><h2>本轮练习已完成</h2><strong>{{ active.totalScore }} 分</strong><p>复盘下方各题反馈，再选择一个岗位继续练习。</p>
+        <div v-else-if="selectedQuestion?.answer" class="question-review">
+          <small>本题回答与反馈 · QUESTION {{ selectedQuestion.questionOrder }}</small>
+          <h2>{{ selectedQuestion.question }}</h2>
+          <div class="review-answer"><b>你的回答</b><p>{{ selectedQuestion.answer.answer }}</p></div>
+          <footer><span>评分 {{ selectedQuestion.answer.score }}</span><p>{{ selectedQuestion.answer.feedback }}</p></footer>
         </div>
 
         <div class="answer-history">
@@ -110,7 +137,7 @@ onMounted(initialize)
   max-width: 850px;
   margin: 0 auto 24px;
 }
-.question-overview article {
+.question-overview .question-card {
   display: grid;
   grid-template-columns: 28px 1fr auto;
   gap: 10px;
@@ -120,12 +147,20 @@ onMounted(initialize)
   border: 1px solid #253d53;
   border-radius: 8px;
   background: #0a1827;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.question-overview article.current {
+.question-overview .question-card:hover {
+  border-color: #39718b;
+  transform: translateY(-1px);
+}
+.question-overview .question-card.current {
   border-color: #35d2d0;
   background: #35d2d00c;
+  box-shadow: inset 3px 0 #35d2d0;
 }
-.question-overview article.done {
+.question-overview .question-card.done {
   border-color: #315e50;
   background: #53d28c0b;
 }
@@ -147,4 +182,34 @@ onMounted(initialize)
 }
 .question-overview .current b { color: #35d2d0; }
 .question-overview .done b { color: #76e5bc; }
+.question-steps button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+.question-steps button:hover i { border-color: #35d2d0; color: #35d2d0; }
+.compact-result { padding: 12px 20px 24px; }
+.compact-result > span { width: 36px; height: 36px; font-size: 17px; }
+.compact-result h2 { margin: 8px 0 3px; }
+.compact-result strong { font-size: 26px; }
+.question-review {
+  max-width: 750px;
+  margin: 0 auto;
+}
+.question-review > small { color: #53d28c; font-size: 9px; letter-spacing: 1px; }
+.question-review > h2 { font-size: 19px; line-height: 1.6; margin: 8px 0 18px; }
+.review-answer,
+.question-review > footer {
+  padding: 16px;
+  border: 1px solid #263e54;
+  border-radius: 8px;
+  background: #091725;
+}
+.review-answer b,
+.question-review > footer span { color: #8ca2b7; font-size: 10px; }
+.review-answer p,
+.question-review > footer p { margin: 8px 0 0; color: #c1d0dd; font-size: 11px; line-height: 1.7; }
+.question-review > footer { margin-top: 10px; border-color: #315e50; background: #53d28c0b; }
+.question-review > footer span { color: #76e5bc; font-weight: 800; }
 </style>

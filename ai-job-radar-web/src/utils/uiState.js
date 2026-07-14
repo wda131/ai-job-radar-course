@@ -14,3 +14,9 @@ export const chooseInterviewSessionId = (sessions, requestedId) => {
   const match = sessions.find(session => String(session.id) === requested)
   return match?.id ?? sessions[0]?.id ?? null
 }
+
+export const chooseInterviewQuestionId = (questions, requestedId = null) => {
+  const requested = requestedId == null ? '' : String(requestedId)
+  const match = questions.find(question => String(question.id) === requested)
+  return match?.id ?? questions.find(question => !question.answer)?.id ?? questions[0]?.id ?? null
+}
