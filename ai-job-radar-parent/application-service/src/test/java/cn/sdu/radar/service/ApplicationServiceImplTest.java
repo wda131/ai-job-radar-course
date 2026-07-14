@@ -3,6 +3,7 @@ package cn.sdu.radar.service;
 import cn.sdu.radar.exception.BusinessException;
 import cn.sdu.radar.feign.JobClient;
 import cn.sdu.radar.mapper.ApplicationRecordMapper;
+import cn.sdu.radar.mq.ApplicationEventPublisher;
 import cn.sdu.radar.pojo.ApplicationRecord;
 import cn.sdu.radar.pojo.dto.ApplicationCreateDTO;
 import cn.sdu.radar.pojo.dto.ApplicationUpdateDTO;
@@ -24,13 +25,15 @@ import static org.mockito.Mockito.when;
 class ApplicationServiceImplTest {
     private ApplicationRecordMapper applicationMapper;
     private JobClient jobClient;
+    private ApplicationEventPublisher eventPublisher;
     private ApplicationServiceImpl applicationService;
 
     @BeforeEach
     void setUp() {
         applicationMapper = mock(ApplicationRecordMapper.class);
         jobClient = mock(JobClient.class);
-        applicationService = new ApplicationServiceImpl(applicationMapper, jobClient);
+        eventPublisher = mock(ApplicationEventPublisher.class);
+        applicationService = new ApplicationServiceImpl(applicationMapper, jobClient, eventPublisher);
         JobSummaryVO job = new JobSummaryVO();
         job.setId(4L);
         job.setTitle("全栈开发实习生");
@@ -50,6 +53,7 @@ class ApplicationServiceImplTest {
         assertNotNull(result.getAppliedAt());
         assertEquals("全栈开发实习生", result.getJob().getTitle());
         verify(applicationMapper).insert(any(ApplicationRecord.class));
+        verify(eventPublisher).publish(any());
     }
 
     @Test
@@ -69,6 +73,7 @@ class ApplicationServiceImplTest {
         assertEquals("APPLIED", result.getStatus());
         assertNotNull(record.getAppliedAt());
         verify(applicationMapper).updateById(record);
+        verify(eventPublisher).publish(any());
     }
 
     @Test

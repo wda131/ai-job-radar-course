@@ -1,8 +1,10 @@
 package cn.sdu.radar.service.impl;
 
 import cn.sdu.radar.exception.BusinessException;
+import cn.sdu.radar.event.ApplicationStatusEvent;
 import cn.sdu.radar.feign.JobClient;
 import cn.sdu.radar.mapper.ApplicationRecordMapper;
+import cn.sdu.radar.mq.ApplicationEventPublisher;
 import cn.sdu.radar.pojo.ApplicationRecord;
 import cn.sdu.radar.pojo.dto.ApplicationCreateDTO;
 import cn.sdu.radar.pojo.dto.ApplicationUpdateDTO;
@@ -20,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 public class ApplicationServiceImpl implements ApplicationRecordService {
@@ -28,11 +31,14 @@ public class ApplicationServiceImpl implements ApplicationRecordService {
 
     private final ApplicationRecordMapper applicationMapper;
     private final JobClient jobClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public ApplicationServiceImpl(ApplicationRecordMapper applicationMapper, JobClient jobClient) {
+    public ApplicationServiceImpl(ApplicationRecordMapper applicationMapper, JobClient jobClient,
+                                  ApplicationEventPublisher eventPublisher) {
         this.applicationMapper = applicationMapper;
         this.jobClient = jobClient;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -56,6 +62,7 @@ public class ApplicationServiceImpl implements ApplicationRecordService {
         record.setCreatedAt(now);
         record.setUpdatedAt(now);
         applicationMapper.insert(record);
+        publishEvent(record, job, "已成功投递「" + job.getTitle() + "」");
         return toVO(record, job);
     }
 
@@ -76,7 +83,9 @@ public class ApplicationServiceImpl implements ApplicationRecordService {
         }
         record.setUpdatedAt(LocalDateTime.now());
         applicationMapper.updateById(record);
-        return toVO(record, requireJob(record.getJobId()));
+        JobSummaryVO job = requireJob(record.getJobId());
+        publishEvent(record, job, "投递状态已更新为 " + status);
+        return toVO(record, job);
     }
 
     @Override
@@ -110,5 +119,11 @@ public class ApplicationServiceImpl implements ApplicationRecordService {
 
     private String valueOrEmpty(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private void publishEvent(ApplicationRecord record, JobSummaryVO job, String message) {
+        eventPublisher.publish(new ApplicationStatusEvent(
+                UUID.randomUUID().toString(), record.getUserId(), record.getJobId(),
+                job.getTitle(), job.getCompany(), record.getStatus(), message, LocalDateTime.now()));
     }
 }
