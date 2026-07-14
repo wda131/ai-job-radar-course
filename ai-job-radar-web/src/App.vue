@@ -9,11 +9,14 @@ const profile = computed(() => {
   return JSON.parse(localStorage.getItem('radar_profile') || '{}')
 })
 const nav = [
-  ['/', '⌂', '总览'], ['/jobs', '⌕', '职位雷达'], ['/matches', '◎', '智能匹配'],
-  ['/applications', '▤', '求职进度'], ['/interviews', '◫', '模拟面试'], ['/profile', '◇', '我的档案']
+  ['/', '⌂', '总览'], ['/jobs', '⌕', '职位雷达'], ['/matches', '◇', '智能匹配'],
+  ['/applications', '▦', '求职进度'], ['/interviews', '◉', '模拟面试'],
+  ['/notifications', '✦', '消息中心'], ['/profile', '●', '我的档案']
 ]
 const logout = () => {
-  localStorage.removeItem('radar_token'); localStorage.removeItem('radar_profile'); router.push('/login')
+  localStorage.removeItem('radar_token')
+  localStorage.removeItem('radar_profile')
+  router.push('/login')
 }
 </script>
 
@@ -35,7 +38,7 @@ const logout = () => {
       </div>
       <button class="user-block" @click="logout">
         <span class="avatar">{{ (profile.name || profile.username || '同').slice(0, 1) }}</span>
-        <span><b>{{ profile.name || profile.username || '同学' }}</b><small>{{ profile.targetRole || '求职探索中' }}</small></span><i>↪</i>
+        <span><b>{{ profile.name || profile.username || '同学' }}</b><small>{{ profile.targetRole || '求职探索中' }}</small></span><i>→</i>
       </button>
     </aside>
     <main class="main"><RouterView /></main>

@@ -23,5 +23,6 @@ class GatewayConfigurationTest {
         assertThat(properties).containsValue("lb://match-service");
         assertThat(properties).containsValue("lb://application-service");
         assertThat(properties).containsValue("lb://interview-service");
+        assertThat(properties).containsValue("lb://notification-service");
     }
 }

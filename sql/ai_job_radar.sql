@@ -7,6 +7,7 @@ USE ai_job_radar;
 DROP TABLE IF EXISTS interview_answers;
 DROP TABLE IF EXISTS interview_questions;
 DROP TABLE IF EXISTS interview_sessions;
+DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS favorites;
 DROP TABLE IF EXISTS match_results;
@@ -80,6 +81,19 @@ CREATE TABLE applications (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uk_application_user_job (user_id, job_id),
   INDEX idx_application_status (status)
+) ENGINE=InnoDB;
+
+CREATE TABLE notifications (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  event_id VARCHAR(64) NOT NULL,
+  user_id BIGINT NOT NULL,
+  type VARCHAR(30) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  content VARCHAR(500) NOT NULL,
+  read_status TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_notification_event (event_id),
+  INDEX idx_notification_user_read (user_id, read_status, created_at)
 ) ENGINE=InnoDB;
 
 CREATE TABLE interview_sessions (

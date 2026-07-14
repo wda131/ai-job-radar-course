@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { chooseInterviewSessionId, jobActionState } from '../src/utils/uiState.js'
 
 test('marks favorited and applied jobs', () => {
@@ -33,4 +34,15 @@ test('keeps snowflake interview ids precise as strings', () => {
     chooseInterviewSessionId(sessions, '2076675828967198721'),
     '2076675828967198721'
   )
+})
+
+test('exposes the notification center through api router and navigation', () => {
+  const api = readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
+  const router = readFileSync(new URL('../src/router/index.js', import.meta.url), 'utf8')
+  const app = readFileSync(new URL('../src/App.vue', import.meta.url), 'utf8')
+
+  assert.match(api, /getNotifications/)
+  assert.match(api, /readAllNotifications/)
+  assert.match(router, /\/notifications/)
+  assert.match(app, /消息中心/)
 })

@@ -6,6 +6,7 @@ import MatchesView from '../views/MatchesView.vue'
 import ApplicationsView from '../views/ApplicationsView.vue'
 import InterviewsView from '../views/InterviewsView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import NotificationsView from '../views/NotificationsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,7 @@ const router = createRouter({
     { path: '/matches', component: MatchesView },
     { path: '/applications', component: ApplicationsView },
     { path: '/interviews', component: InterviewsView },
+    { path: '/notifications', component: NotificationsView },
     { path: '/profile', component: ProfileView }
   ]
 })
