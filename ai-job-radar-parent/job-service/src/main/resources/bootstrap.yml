@@ -1,6 +1,11 @@
 spring:
   application:
     name: job-service
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DATABASE:0}
+    timeout: 2000ms
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/ai_job_radar?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8

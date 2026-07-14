@@ -9,6 +9,7 @@ import cn.sdu.radar.vo.PageResult;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -25,6 +26,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Cacheable(cacheNames = "jobs", key = "#keyword + ':' + #city + ':' + #minSalary + ':' + #page + ':' + #size")
     public PageResult<JobSummaryVO> search(String keyword, String city, Integer minSalary,
                                            long page, long size) {
         if (page < 1 || size < 1 || size > 50) {
@@ -52,6 +54,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Cacheable(cacheNames = "job-detail", key = "#id")
     public JobSummaryVO getById(Long id) {
         Job job = id == null ? null : jobMapper.selectById(id);
         if (job == null) {

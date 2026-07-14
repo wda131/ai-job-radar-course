@@ -11,7 +11,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.cache.annotation.Cacheable;
 
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
@@ -92,5 +94,15 @@ class JobServiceImplTest {
                 () -> jobService.getById(99L));
 
         assertEquals(404, exception.getCode());
+    }
+
+    @Test
+    void cachesJobSearchAndDetailWithSeparateCacheNames() throws Exception {
+        Method search = JobServiceImpl.class.getMethod("search", String.class, String.class,
+                Integer.class, long.class, long.class);
+        Method detail = JobServiceImpl.class.getMethod("getById", Long.class);
+
+        assertEquals("jobs", search.getAnnotation(Cacheable.class).cacheNames()[0]);
+        assertEquals("job-detail", detail.getAnnotation(Cacheable.class).cacheNames()[0]);
     }
 }
