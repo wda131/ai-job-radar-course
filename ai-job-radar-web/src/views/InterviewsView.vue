@@ -4,7 +4,11 @@ import { useRoute } from 'vue-router'
 import { answerInterview, getInterview, getInterviews } from '../api'
 import NoticeBar from '../components/NoticeBar.vue'
 import PageHeader from '../components/PageHeader.vue'
-import { chooseInterviewQuestionId, chooseInterviewSessionId } from '../utils/uiState'
+import {
+  chooseInterviewQuestionId,
+  chooseInterviewSessionId,
+  chooseNextInterviewQuestionId
+} from '../utils/uiState'
 
 const route = useRoute()
 const sessions = ref([])
@@ -38,14 +42,18 @@ const initialize = async () => {
 const submit = async () => {
   if (!selectedQuestion.value || selectedQuestion.value.answer || !answer.value.trim()) return
   try {
+    const submittedQuestionId = selectedQuestion.value.id
     await answerInterview(active.value.id, {
-      questionId: selectedQuestion.value.id,
+      questionId: submittedQuestionId,
       answer: answer.value
     })
     answer.value = ''
     const refreshed = await getInterview(active.value.id)
     active.value = refreshed
-    selectedQuestionId.value = chooseInterviewQuestionId(refreshed.questions)
+    selectedQuestionId.value = chooseNextInterviewQuestionId(
+      refreshed.questions,
+      submittedQuestionId
+    )
     await load()
     notice.value = '回答已评分'
   } catch (error) {
@@ -81,13 +89,13 @@ onMounted(initialize)
         </header>
 
         <div class="question-steps" aria-label="面试题目导航">
-          <button v-for="question in active.questions" :key="question.id" type="button" :aria-label="`打开第${question.questionOrder}题`" @click="selectQuestion(question)">
+          <button v-for="question in active.questions" :key="question.id" type="button" :aria-label="`打开第${question.questionOrder}题，${question.answer ? '已完成' : '待回答'}`" :aria-current="selectedQuestion?.id === question.id ? 'step' : undefined" @click="selectQuestion(question)">
             <i :class="{ done: question.answer, current: selectedQuestion?.id === question.id }">{{ question.questionOrder }}</i>
           </button>
         </div>
 
         <div class="question-overview">
-          <button v-for="question in active.questions" :key="question.id" type="button" class="question-card" :class="{ done: question.answer, current: selectedQuestion?.id === question.id }" @click="selectQuestion(question)">
+          <button v-for="question in active.questions" :key="question.id" type="button" class="question-card" :class="{ done: question.answer, current: selectedQuestion?.id === question.id }" :aria-current="selectedQuestion?.id === question.id ? 'step' : undefined" @click="selectQuestion(question)">
             <span>0{{ question.questionOrder }}</span>
             <p>{{ question.question }}</p>
             <b>{{ question.answer ? selectedQuestion?.id === question.id ? '查看反馈' : '已完成' : selectedQuestion?.id === question.id ? '当前题' : '待回答' }}</b>
@@ -189,6 +197,13 @@ onMounted(initialize)
   color: inherit;
 }
 .question-steps button:hover i { border-color: #35d2d0; color: #35d2d0; }
+.question-steps button:not(:last-child) i::after {
+  content: '';
+  position: absolute;
+  left: 24px;
+  width: 34px;
+  border-top: 1px solid #294157;
+}
 .compact-result { padding: 12px 20px 24px; }
 .compact-result > span { width: 36px; height: 36px; font-size: 17px; }
 .compact-result h2 { margin: 8px 0 3px; }

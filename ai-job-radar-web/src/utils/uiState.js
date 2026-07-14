@@ -20,3 +20,11 @@ export const chooseInterviewQuestionId = (questions, requestedId = null) => {
   const match = questions.find(question => String(question.id) === requested)
   return match?.id ?? questions.find(question => !question.answer)?.id ?? questions[0]?.id ?? null
 }
+
+export const chooseNextInterviewQuestionId = (questions, submittedId) => {
+  const index = questions.findIndex(question => String(question.id) === String(submittedId))
+  if (index < 0) return chooseInterviewQuestionId(questions)
+
+  const remaining = [...questions.slice(index + 1), ...questions.slice(0, index)]
+  return remaining.find(question => !question.answer)?.id ?? questions[index].id
+}

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
+  chooseNextInterviewQuestionId,
   chooseInterviewQuestionId,
   chooseInterviewSessionId,
   jobActionState
@@ -66,6 +67,24 @@ test('keeps completed interview questions available for review', () => {
   assert.equal(chooseInterviewQuestionId([], null), null)
 })
 
+test('advances after the submitted question, wraps, and retains final feedback', () => {
+  const questions = [
+    { id: '41', answer: null },
+    { id: '42', answer: { score: 81 } },
+    { id: '43', answer: { score: 85 } },
+    { id: '44', answer: null }
+  ]
+
+  assert.equal(chooseNextInterviewQuestionId(questions, '43'), '44')
+  assert.equal(chooseNextInterviewQuestionId(questions, '44'), '41')
+
+  const completedQuestions = questions.map(question => ({
+    ...question,
+    answer: question.answer || { score: 88 }
+  }))
+  assert.equal(chooseNextInterviewQuestionId(completedQuestions, '44'), '44')
+})
+
 test('makes every interview question selectable and keeps answered questions reviewable', () => {
   const view = readFileSync(new URL('../src/views/InterviewsView.vue', import.meta.url), 'utf8')
   const selectionHandlers = view.match(/@click="selectQuestion\(question\)"/g) || []
@@ -73,6 +92,8 @@ test('makes every interview question selectable and keeps answered questions rev
   assert.equal(selectionHandlers.length, 2)
   assert.match(view, /selectedQuestion\.answer/)
   assert.match(view, /本题回答与反馈/)
+  assert.match(view, /:aria-current=/)
+  assert.match(view, /button:not\(:last-child\) i::after/)
 })
 
 test('renders an unmistakable selected state for favorited jobs', () => {
