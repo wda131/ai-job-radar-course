@@ -132,6 +132,12 @@ VALUES
   ('student', '123456', '山威同学', 'Java后端开发', '威海', 'Java,Spring Boot,MySQL,Vue,Git', 1, '本科', 7000, 12000,
    '熟悉Java Web开发，完成过前后端分离课程项目，希望从事后端或全栈开发。');
 
+INSERT INTO notifications
+  (event_id, user_id, type, title, content, read_status, created_at)
+VALUES
+  ('demo-welcome-notification', 1, 'APPLICATION', '投递消息中心已就绪',
+   '新投递与进度变化会由 RabbitMQ 异步送达这里。', 0, NOW());
+
 INSERT INTO jobs
   (title, company, city, salary_min, salary_max, experience_years, education, description, requirements, welfare_tags, posted_at)
 VALUES
