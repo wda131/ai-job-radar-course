@@ -2,6 +2,29 @@
 
 面向高校求职者的一站式求职辅助系统，覆盖职位检索、可解释匹配、收藏投递、进度管理、模拟面试和异步通知。项目严格保留课程技术版本，并在原业务上增加可关闭、可降级的本地大模型与 Elasticsearch 能力。
 
+## 发给同学：从零运行
+
+第一次在新电脑运行，请直接查看 [同学从零运行指南](docs/CLASSMATE_RUN_GUIDE.md)。指南包含软件安装清单、Docker 与无 Docker 两条路线、数据库初始化、IDEA 八个启动类、Vue3 前端、Ollama、Chrome 扩展、BOSS 手动导入和常见问题排查。
+
+推荐的最短启动顺序：
+
+```powershell
+git clone https://github.com/wda131/ai-job-radar-course.git
+cd ai-job-radar-course
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\start-infrastructure.ps1
+.\scripts\check-environment.ps1
+```
+
+随后用 IDEA 打开 `ai-job-radar-parent/pom.xml`，依次启动七个微服务和 Gateway，再执行：
+
+```powershell
+.\scripts\start-frontend.ps1
+node .\scripts\smoke-test.mjs
+```
+
+访问 `http://127.0.0.1:5174`，使用 `student / 123456` 登录。Chrome 扩展和 BOSS 导入是可选能力，不安装也能运行职位、匹配、收藏投递、模拟面试和消息通知等主体功能。
+
 ## 技术路线
 
 | 层级 | 技术与版本 |
@@ -51,7 +74,7 @@ UserApplication             9001
 JobApplication              9002
 AiApplication               9007
 MatchApplication            9003
-ApplicationApplication      9004
+ApplicationServiceApplication 9004
 InterviewApplication        9005
 NotificationApplication     9006
 GatewayApplication          9000
