@@ -7,3 +7,4 @@
 runtime-logs/
 .env
 *.iml
+job-importer/.browser-data/

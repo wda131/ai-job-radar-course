@@ -13,6 +13,7 @@
 | 消息队列 | RabbitMQ |
 | 本地 AI | Ollama、qwen3:8b、qwen3-embedding:4b |
 | 选做技术 | Elasticsearch 7.6.2、Docker Compose |
+| 可选数据工具 | Playwright 1.49.1（Node.js 独立进程） |
 
 Spring AI 未被引入，因为当前课程基线是 Spring Boot 2.3.12；项目使用课程中已有的 `RestTemplate` 风格直接调用 Ollama HTTP API，避免为了 AI 破坏课程依赖版本。
 
@@ -114,12 +115,54 @@ Compose 包含 MySQL 8.0.26、Nacos 2.1.0、Redis 6.2、RabbitMQ 3.12 和 Elasti
 mysql --default-character-set=utf8mb4 -uroot -proot < sql/upgrade-ai-search.sql
 ```
 
+## BOSS 岗位受控导入（可选）
+
+`job-importer` 是独立的 Node.js 辅助工具，不属于新增微服务；它停止时不影响职位检索、匹配、收藏、投递和面试。工具只读取用户已经在可见 Chromium 页面中打开的岗位卡片，每次最多 20 条，然后通过 Gateway 和 JWT 调用 `job-service`。MySQL 按 `source + external_id` 去重，同一岗位再次导入会更新而不会重复新增，同时清理 Redis 职位缓存并尽力同步 Elasticsearch。
+
+首次使用安装固定版本依赖与 Chromium：
+
+```powershell
+npm --prefix job-importer install
+npx --prefix job-importer playwright install chromium
+```
+
+当前数据库只需迁移一次：
+
+```powershell
+Get-Content .\sql\upgrade-boss-import.sql -Raw | mysql --default-character-set=utf8mb4 -uroot -proot ai_job_radar
+```
+
+设置课程系统登录信息。脚本只把它们用于本机 Gateway 登录，不会打印账号、密码、JWT、Cookie 或浏览器存储：
+
+```powershell
+$env:API_BASE_URL = 'http://127.0.0.1:9000'
+$env:RADAR_USERNAME = 'student'
+$env:RADAR_PASSWORD = '123456'
+```
+
+答辩时推荐先用本地 fixture 稳定演示完整导入链路：
+
+```powershell
+.\scripts\start-job-importer.ps1 --keyword Java --city 威海 --limit 2 --fixture job-importer/test/fixtures/boss-results.html
+```
+
+需要检查真实站点时运行：
+
+```powershell
+.\scripts\start-job-importer.ps1 --keyword Java --city 威海 --limit 2
+```
+
+程序会打开可见浏览器并保留本机 `job-importer/.browser-data` 登录状态，用户自行扫码或登录。也可以传入本人有权访问的搜索结果地址：`--url 'https://www.zhipin.com/...'`。工具不绕过验证码、安全验证或访问限制，不使用隐身插件、代理，也不自动沟通或投递；检测到限制时会主动停止。页面结构变化时 fixture 自动化测试仍可用于课程展示，真实页面解析器则需要按当时公开页面结构维护。
+
+导入字段包括岗位名称、公司、城市、薪资、经验、学历、技能/福利标签、来源链接和导入时间。职位卡片会显示 `BOSS` 或 `本地数据` 来源标记。
+
 ## 自动化验证
 
 ```powershell
 mvn -f ai-job-radar-parent/pom.xml clean test
 npm --prefix ai-job-radar-web test
 npm --prefix ai-job-radar-web run build
+npm --prefix job-importer test
 ```
 
 核心演示顺序建议：登录与画像 → Elasticsearch 职位检索 → 本地 AI 匹配报告 → 收藏与投递 → RabbitMQ 通知 → Ollama 四题面试与结构化反馈 → 关闭增强能力展示自动降级。

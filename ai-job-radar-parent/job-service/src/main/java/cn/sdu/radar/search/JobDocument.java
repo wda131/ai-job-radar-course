@@ -34,6 +34,10 @@ public class JobDocument {
     @Field(type = FieldType.Text)
     private String welfareTags;
     @Field(type = FieldType.Keyword)
+    private String source;
+    @Field(type = FieldType.Keyword, index = false)
+    private String sourceUrl;
+    @Field(type = FieldType.Keyword)
     private String status;
     @Field(type = FieldType.Long)
     private Long postedAtEpoch;
@@ -51,6 +55,8 @@ public class JobDocument {
         document.setDescription(job.getDescription());
         document.setRequirements(job.getRequirements());
         document.setWelfareTags(job.getWelfareTags());
+        document.setSource(job.getSource());
+        document.setSourceUrl(job.getSourceUrl());
         document.setStatus(job.getStatus());
         document.setPostedAtEpoch(job.getPostedAt() == null ? 0L
                 : java.sql.Timestamp.valueOf(job.getPostedAt()).getTime());
@@ -70,6 +76,8 @@ public class JobDocument {
         result.setDescription(description);
         result.setRequirements(requirements);
         result.setWelfareTags(welfareTags);
+        result.setSource(source);
+        result.setSourceUrl(sourceUrl);
         result.setStatus(status);
         if (postedAtEpoch != null && postedAtEpoch > 0) {
             result.setPostedAt(new java.sql.Timestamp(postedAtEpoch).toLocalDateTime());

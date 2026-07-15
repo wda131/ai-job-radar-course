@@ -17,6 +17,8 @@ public class JobSummaryVO {
     private String description;
     private String requirements;
     private String welfareTags;
+    private String source;
+    private String sourceUrl;
     private String status;
     private LocalDateTime postedAt;
 }

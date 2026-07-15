@@ -13,7 +13,7 @@ defineEmits(['match', 'favorite', 'apply', 'interview'])
 
 <template>
   <article class="job-card" :class="{ compact }">
-    <div class="job-top"><div class="company-logo">{{ job.company?.slice(0, 1) }}</div><div><h3>{{ job.title }}</h3><p>{{ job.company }} · {{ job.city }}</p></div><span v-if="score != null" class="score-pill">{{ score }}% 匹配</span></div>
+    <div class="job-top"><div class="company-logo">{{ job.company?.slice(0, 1) }}</div><div><h3>{{ job.title }}</h3><p>{{ job.company }} · {{ job.city }} <span class="source-pill">{{ job.source === 'BOSS' ? 'BOSS' : '本地数据' }}</span></p></div><span v-if="score != null" class="score-pill">{{ score }}% 匹配</span></div>
     <strong class="salary">{{ salaryRange(job) }}</strong>
     <div class="tags"><span>{{ job.experienceYears }}年经验</span><span>{{ job.education }}</span><span v-for="tag in (job.welfareTags || '').split(',').slice(0, 2)" :key="tag">{{ tag }}</span></div>
     <p class="job-desc">{{ job.description }}</p>
@@ -27,6 +27,19 @@ defineEmits(['match', 'favorite', 'apply', 'interview'])
 </template>
 
 <style scoped>
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 7px;
+  padding: 1px 7px;
+  color: #75e8df;
+  font-size: 11px;
+  line-height: 18px;
+  border: 1px solid #2d7775;
+  border-radius: 999px;
+  background: #123534;
+  vertical-align: middle;
+}
 .card-actions .selected {
   color: #061810;
   border-color: #74e3b3;

@@ -90,6 +90,8 @@ public class JobServiceImpl implements JobService {
         result.setDescription(job.getDescription());
         result.setRequirements(job.getRequirements());
         result.setWelfareTags(job.getWelfareTags());
+        result.setSource(job.getSource());
+        result.setSourceUrl(job.getSourceUrl());
         result.setStatus(job.getStatus());
         result.setPostedAt(job.getPostedAt());
         return result;

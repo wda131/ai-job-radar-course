@@ -39,6 +39,7 @@ const answer = await request(`/api/interviews/${interview.id}/answers`, {
 console.log(JSON.stringify({
   gateway: 'ok',
   jobs: jobs.records.length,
+  firstJobSource: job.source || 'LOCAL',
   keywordJobs: keywordJobs.records.length,
   match: {
     finalScore: match.score,

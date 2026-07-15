@@ -116,6 +116,14 @@ test('renders an unmistakable selected state for favorited jobs', () => {
   assert.match(card, /:aria-pressed="favorited"/)
 })
 
+test('shows the job data source without adding another workflow', () => {
+  const card = readFileSync(new URL('../src/components/JobCard.vue', import.meta.url), 'utf8')
+
+  assert.match(card, /job\.source === 'BOSS' \? 'BOSS' : '本地数据'/)
+  assert.match(card, /class="source-pill"/)
+  assert.match(card, /\.source-pill[\s\S]*border/)
+})
+
 test('exposes the notification center through api router and navigation', () => {
   const api = readFileSync(new URL('../src/api/index.js', import.meta.url), 'utf8')
   const router = readFileSync(new URL('../src/router/index.js', import.meta.url), 'utf8')

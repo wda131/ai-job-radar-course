@@ -43,10 +43,15 @@ CREATE TABLE jobs (
   description VARCHAR(1000) NOT NULL,
   requirements VARCHAR(1000) NOT NULL,
   welfare_tags VARCHAR(300) NOT NULL DEFAULT '',
+  source VARCHAR(20) NOT NULL DEFAULT 'LOCAL',
+  external_id VARCHAR(100) NULL,
+  source_url VARCHAR(1000) NOT NULL DEFAULT '',
+  imported_at DATETIME NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
   posted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_jobs_city (city),
-  INDEX idx_jobs_title (title)
+  INDEX idx_jobs_title (title),
+  UNIQUE KEY uk_jobs_source_external (source, external_id)
 ) ENGINE=InnoDB;
 
 CREATE TABLE match_results (

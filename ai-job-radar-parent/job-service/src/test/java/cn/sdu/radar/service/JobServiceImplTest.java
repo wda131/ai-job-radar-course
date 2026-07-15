@@ -3,6 +3,7 @@ package cn.sdu.radar.service;
 import cn.sdu.radar.exception.BusinessException;
 import cn.sdu.radar.mapper.JobMapper;
 import cn.sdu.radar.pojo.Job;
+import cn.sdu.radar.search.JobDocument;
 import cn.sdu.radar.search.JobSearchService;
 import cn.sdu.radar.service.impl.JobServiceImpl;
 import cn.sdu.radar.vo.JobSummaryVO;
@@ -51,6 +52,8 @@ class JobServiceImplTest {
         job.setDescription("参与业务系统开发");
         job.setRequirements("Java,Spring Boot,MySQL");
         job.setWelfareTags("双休,导师制");
+        job.setSource("BOSS");
+        job.setSourceUrl("https://www.zhipin.com/job_detail/abc123.html");
         job.setStatus("OPEN");
         job.setPostedAt(LocalDateTime.now());
     }
@@ -71,6 +74,8 @@ class JobServiceImplTest {
 
         assertEquals(1, result.getRecords().size());
         assertEquals("海纳科技", result.getRecords().get(0).getCompany());
+        assertEquals("BOSS", result.getRecords().get(0).getSource());
+        assertEquals(job.getSourceUrl(), result.getRecords().get(0).getSourceUrl());
         assertEquals(1, result.getTotal());
 
         ArgumentCaptor<QueryWrapper<Job>> wrapperCaptor = ArgumentCaptor.forClass(QueryWrapper.class);
@@ -115,6 +120,8 @@ class JobServiceImplTest {
         JobSummaryVO summary = new JobSummaryVO();
         summary.setId(10L);
         summary.setTitle("Java后端开发实习生");
+        summary.setSource("BOSS");
+        summary.setSourceUrl("https://www.zhipin.com/job_detail/abc123.html");
         PageResult<JobSummaryVO> elasticsearchResult = new PageResult<>(
                 Collections.singletonList(summary), 1, 1, 8);
         when(jobSearchService.search("Java", "", null, 1, 8))
@@ -123,6 +130,8 @@ class JobServiceImplTest {
         PageResult<JobSummaryVO> result = jobService.search("Java", "", null, 1, 8);
 
         assertEquals("Java后端开发实习生", result.getRecords().get(0).getTitle());
+        assertEquals("BOSS", result.getRecords().get(0).getSource());
+        assertEquals(summary.getSourceUrl(), result.getRecords().get(0).getSourceUrl());
         verify(jobMapper, never()).selectPage(any(), any());
     }
 
@@ -143,5 +152,13 @@ class JobServiceImplTest {
 
         assertEquals(1, result.getTotal());
         verify(jobMapper).selectPage(any(Page.class), any(QueryWrapper.class));
+    }
+
+    @Test
+    void elasticsearchDocumentPreservesImportedJobSource() {
+        JobSummaryVO summary = JobDocument.from(job).toSummary();
+
+        assertEquals("BOSS", summary.getSource());
+        assertEquals(job.getSourceUrl(), summary.getSourceUrl());
     }
 }

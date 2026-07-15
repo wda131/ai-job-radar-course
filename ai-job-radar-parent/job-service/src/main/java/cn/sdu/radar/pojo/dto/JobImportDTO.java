@@ -1,14 +1,11 @@
-package cn.sdu.radar.pojo;
+package cn.sdu.radar.pojo.dto;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Data
-@TableName("jobs")
-public class Job {
-    private Long id;
+public class JobImportDTO {
+    private String source;
+    private String externalId;
     private String title;
     private String company;
     private String city;
@@ -19,10 +16,6 @@ public class Job {
     private String description;
     private String requirements;
     private String welfareTags;
-    private String source;
-    private String externalId;
     private String sourceUrl;
-    private LocalDateTime importedAt;
     private String status;
-    private LocalDateTime postedAt;
 }
