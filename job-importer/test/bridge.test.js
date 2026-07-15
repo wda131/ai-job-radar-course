@@ -79,6 +79,7 @@ test('normalizes and delegates extension jobs', async () => {
     assert.equal(response.status, 200)
     assert.equal(received[0].source, 'BOSS')
     assert.equal(received[0].salaryMin, 10000)
+    assert.equal(received[0].salaryText, '10-15K')
   } finally {
     await new Promise(resolve => server.close(resolve))
   }

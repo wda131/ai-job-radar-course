@@ -85,6 +85,7 @@ public class JobServiceImpl implements JobService {
         result.setCity(job.getCity());
         result.setSalaryMin(job.getSalaryMin());
         result.setSalaryMax(job.getSalaryMax());
+        result.setSalaryText(job.getSalaryText());
         result.setExperienceYears(job.getExperienceYears());
         result.setEducation(job.getEducation());
         result.setDescription(job.getDescription());

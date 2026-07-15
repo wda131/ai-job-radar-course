@@ -8,6 +8,14 @@ import {
   chooseInterviewSessionId,
   jobActionState
 } from '../src/utils/uiState.js'
+import { salaryRange } from '../src/utils/format.js'
+
+test('shows exact imported salary text and a clear unknown fallback', () => {
+  assert.equal(salaryRange({ salaryText: '200-600元/天', salaryMin: 0, salaryMax: 0 }), '200-600元/天')
+  assert.equal(salaryRange({ salaryText: '15-20K·13薪', salaryMin: 15000, salaryMax: 20000 }), '15-20K·13薪')
+  assert.equal(salaryRange({ salaryMin: 9000, salaryMax: 13000 }), '9–13K')
+  assert.equal(salaryRange({ salaryMin: 0, salaryMax: 0 }), '薪资面议')
+})
 
 test('labels local model output and fallback output clearly', () => {
   assert.deepEqual(aiSourceState(true), {
@@ -154,5 +162,6 @@ test('documents the Chrome extension bridge without exposing BOSS credentials', 
   assert.match(readme, /chrome:\/\/extensions/)
   assert.match(readme, /加载已解压的扩展程序/)
   assert.match(readme, /最多 50 条/)
+  assert.match(readme, /2026-07-15-add-salary-text\.sql/)
   assert.doesNotMatch(launcher, /zhipin.*cookie|zp_token/i)
 })

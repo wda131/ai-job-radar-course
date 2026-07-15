@@ -12,6 +12,7 @@ public class JobSummaryVO {
     private String city;
     private Integer salaryMin;
     private Integer salaryMax;
+    private String salaryText;
     private Integer experienceYears;
     private String education;
     private String description;

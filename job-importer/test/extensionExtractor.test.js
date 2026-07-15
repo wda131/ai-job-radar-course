@@ -61,7 +61,7 @@ test('extracts the current BOSS card layout with boss and location fields', asyn
           <div class="job-info">
             <div class="job-title clearfix">
               <a class="job-name" href="https://www.zhipin.com/job_detail/current123.html">AI Agent 开发工程师</a>
-              <span class="job-salary">12-18K</span>
+              <span class="job-salary">\uE032\uE036-\uE033\uE031K</span>
             </div>
             <ul class="tag-list"><li>1-3年</li><li>本科</li></ul>
           </div>
@@ -78,7 +78,7 @@ test('extracts the current BOSS card layout with boss and location fields', asyn
     assert.equal(jobs.length, 1)
     assert.equal(jobs[0].company, '当前页面公司')
     assert.equal(jobs[0].city, '济南·历下区')
-    assert.equal(jobs[0].salary, '12-18K')
+    assert.equal(jobs[0].salary, '15-20K')
     assert.equal(jobs[0].experience, '1-3年')
     assert.equal(jobs[0].education, '本科')
   } finally {

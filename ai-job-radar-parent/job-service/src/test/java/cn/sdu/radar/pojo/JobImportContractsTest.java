@@ -22,6 +22,7 @@ class JobImportContractsTest {
         item.setCity("威海");
         item.setSalaryMin(10000);
         item.setSalaryMax(16000);
+        item.setSalaryText("10-16K·13薪");
         item.setExperienceYears(1);
         item.setEducation("本科");
         item.setDescription("负责后端服务");
@@ -34,6 +35,7 @@ class JobImportContractsTest {
         batch.setJobs(Collections.singletonList(item));
         assertEquals("abc123", batch.getJobs().get(0).getExternalId());
         assertEquals(10000, batch.getJobs().get(0).getSalaryMin());
+        assertEquals("10-16K·13薪", batch.getJobs().get(0).getSalaryText());
 
         JobImportResultVO result = new JobImportResultVO();
         result.setCreated(1);
@@ -46,7 +48,9 @@ class JobImportContractsTest {
         JobSummaryVO summary = new JobSummaryVO();
         summary.setSource("BOSS");
         summary.setSourceUrl(item.getSourceUrl());
+        summary.setSalaryText(item.getSalaryText());
         assertEquals("BOSS", summary.getSource());
         assertEquals(item.getSourceUrl(), summary.getSourceUrl());
+        assertEquals(item.getSalaryText(), summary.getSalaryText());
     }
 }

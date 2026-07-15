@@ -23,6 +23,8 @@ public class JobDocument {
     private Integer salaryMin;
     @Field(type = FieldType.Integer)
     private Integer salaryMax;
+    @Field(type = FieldType.Keyword, index = false)
+    private String salaryText;
     @Field(type = FieldType.Integer)
     private Integer experienceYears;
     @Field(type = FieldType.Keyword)
@@ -50,6 +52,7 @@ public class JobDocument {
         document.setCity(job.getCity());
         document.setSalaryMin(job.getSalaryMin());
         document.setSalaryMax(job.getSalaryMax());
+        document.setSalaryText(job.getSalaryText());
         document.setExperienceYears(job.getExperienceYears());
         document.setEducation(job.getEducation());
         document.setDescription(job.getDescription());
@@ -71,6 +74,7 @@ public class JobDocument {
         result.setCity(city);
         result.setSalaryMin(salaryMin);
         result.setSalaryMax(salaryMax);
+        result.setSalaryText(salaryText);
         result.setExperienceYears(experienceYears);
         result.setEducation(education);
         result.setDescription(description);

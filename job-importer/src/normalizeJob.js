@@ -1,8 +1,15 @@
 const text = value => String(value || '').trim()
 const trimTo = (value, max) => text(value).slice(0, max)
 
+const decodeSalary = value => Array.from(text(value), character => {
+  const codePoint = character.codePointAt(0)
+  return codePoint >= 0xE031 && codePoint <= 0xE03A
+    ? String(codePoint - 0xE031)
+    : character
+}).join('')
+
 export function parseSalary(value) {
-  const match = text(value).toUpperCase().match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*K/)
+  const match = decodeSalary(value).toUpperCase().match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*K/)
   if (!match) return { salaryMin: 0, salaryMax: 0 }
   return {
     salaryMin: Math.round(Number(match[1]) * 1000),
@@ -29,13 +36,15 @@ export function normalizeJob(raw, fallbackCity = '') {
   if (!title) throw new Error('职位标题不能为空')
   if (!company) throw new Error('公司名称不能为空')
   if (!externalId) throw new Error('外部职位编号不能为空')
-  const salary = parseSalary(raw.salary)
+  const salaryText = trimTo(decodeSalary(raw.salary), 50)
+  const salary = parseSalary(salaryText)
   return {
     source: 'BOSS',
     externalId,
     title,
     company,
     city: trimTo(raw.city || fallbackCity || '不限', 50),
+    salaryText,
     ...salary,
     experienceYears: parseExperience(raw.experience),
     education: trimTo(raw.education || '不限', 50),

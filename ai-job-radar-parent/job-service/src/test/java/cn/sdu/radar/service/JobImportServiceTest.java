@@ -60,6 +60,7 @@ class JobImportServiceTest {
         verify(jobMapper).insert(inserted.capture());
         assertEquals("BOSS", inserted.getValue().getSource());
         assertEquals("abc123", inserted.getValue().getExternalId());
+        assertEquals("10-16K", inserted.getValue().getSalaryText());
         assertNotNull(inserted.getValue().getImportedAt());
         verify(jobSearchRepository).saveAll(anyList());
     }
@@ -148,6 +149,7 @@ class JobImportServiceTest {
         job.setCity("威海");
         job.setSalaryMin(10000);
         job.setSalaryMax(16000);
+        job.setSalaryText("10-16K");
         job.setExperienceYears(1);
         job.setEducation("本科");
         job.setDescription("负责后端服务");

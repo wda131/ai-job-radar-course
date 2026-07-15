@@ -47,6 +47,7 @@ class JobServiceImplTest {
         job.setCity("威海");
         job.setSalaryMin(5000);
         job.setSalaryMax(7000);
+        job.setSalaryText("5-7K");
         job.setExperienceYears(0);
         job.setEducation("本科");
         job.setDescription("参与业务系统开发");
@@ -76,6 +77,7 @@ class JobServiceImplTest {
         assertEquals("海纳科技", result.getRecords().get(0).getCompany());
         assertEquals("BOSS", result.getRecords().get(0).getSource());
         assertEquals(job.getSourceUrl(), result.getRecords().get(0).getSourceUrl());
+        assertEquals("5-7K", result.getRecords().get(0).getSalaryText());
         assertEquals(1, result.getTotal());
 
         ArgumentCaptor<QueryWrapper<Job>> wrapperCaptor = ArgumentCaptor.forClass(QueryWrapper.class);
@@ -160,5 +162,6 @@ class JobServiceImplTest {
 
         assertEquals("BOSS", summary.getSource());
         assertEquals(job.getSourceUrl(), summary.getSourceUrl());
+        assertEquals("5-7K", summary.getSalaryText());
     }
 }

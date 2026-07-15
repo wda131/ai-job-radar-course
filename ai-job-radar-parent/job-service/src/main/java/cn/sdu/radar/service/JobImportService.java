@@ -107,6 +107,7 @@ public class JobImportService {
         require(item.getRequirements(), "职位要求", 1000);
         optional(item.getWelfareTags(), "福利标签", 300);
         optional(item.getSourceUrl(), "来源链接", 1000);
+        optional(item.getSalaryText(), "薪资文本", 50);
         int salaryMin = item.getSalaryMin() == null ? 0 : item.getSalaryMin();
         int salaryMax = item.getSalaryMax() == null ? 0 : item.getSalaryMax();
         if (salaryMin < 0 || salaryMax < salaryMin) {
@@ -133,6 +134,7 @@ public class JobImportService {
         target.setCity(source.getCity().trim());
         target.setSalaryMin(source.getSalaryMin() == null ? 0 : source.getSalaryMin());
         target.setSalaryMax(source.getSalaryMax() == null ? 0 : source.getSalaryMax());
+        target.setSalaryText(source.getSalaryText() == null ? "" : source.getSalaryText().trim());
         target.setExperienceYears(source.getExperienceYears() == null ? 0 : source.getExperienceYears());
         target.setEducation(source.getEducation().trim());
         target.setDescription(source.getDescription().trim());

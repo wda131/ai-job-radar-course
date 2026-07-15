@@ -38,6 +38,7 @@ CREATE TABLE jobs (
   city VARCHAR(50) NOT NULL,
   salary_min INT NOT NULL,
   salary_max INT NOT NULL,
+  salary_text VARCHAR(50) NOT NULL DEFAULT '',
   experience_years INT NOT NULL DEFAULT 0,
   education VARCHAR(50) NOT NULL,
   description VARCHAR(1000) NOT NULL,

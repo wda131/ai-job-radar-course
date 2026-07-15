@@ -7,6 +7,13 @@
     .map(item => clean(item.textContent))
     .filter(Boolean)
 
+  const decodeSalary = value => Array.from(clean(value), character => {
+    const codePoint = character.codePointAt(0)
+    return codePoint >= 0xE031 && codePoint <= 0xE03A
+      ? String(codePoint - 0xE031)
+      : character
+  }).join('')
+
   function externalIdFromUrl(url) {
     return String(url || '').match(/\/job_detail\/([^/?#]+?)(?:\.html)?(?:[?#]|$)/)?.[1] || ''
   }
@@ -32,7 +39,7 @@
         title: text(card, '.job-name'),
         company: text(card, '.company-name, .boss-name'),
         city: text(card, '.job-area, .company-location'),
-        salary: text(card, '.salary, .job-salary'),
+        salary: decodeSalary(text(card, '.salary, .job-salary')),
         experience: jobInfo[0] || '',
         education: jobInfo[1] || '',
         description: '来自 BOSS 当前可见岗位列表，完整信息请查看来源链接',
