@@ -54,9 +54,15 @@ CREATE TABLE match_results (
   user_id BIGINT NOT NULL,
   job_id BIGINT NOT NULL,
   score INT NOT NULL,
+  rule_score INT NOT NULL,
+  semantic_score INT NULL,
+  ai_used TINYINT(1) NOT NULL DEFAULT 0,
   matched_skills VARCHAR(500) NOT NULL DEFAULT '',
   missing_skills VARCHAR(500) NOT NULL DEFAULT '',
   summary VARCHAR(1000) NOT NULL,
+  strengths VARCHAR(1000) NOT NULL DEFAULT '',
+  gaps VARCHAR(1000) NOT NULL DEFAULT '',
+  suggestions VARCHAR(1000) NOT NULL DEFAULT '',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_match_user (user_id),
   INDEX idx_match_job (job_id)
@@ -122,6 +128,10 @@ CREATE TABLE interview_answers (
   answer VARCHAR(2000) NOT NULL,
   score INT NOT NULL,
   feedback VARCHAR(500) NOT NULL,
+  strengths VARCHAR(1000) NOT NULL DEFAULT '',
+  weaknesses VARCHAR(1000) NOT NULL DEFAULT '',
+  suggestion VARCHAR(1000) NOT NULL DEFAULT '',
+  ai_used TINYINT(1) NOT NULL DEFAULT 0,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_answer_session_question (session_id, question_id)
 ) ENGINE=InnoDB;

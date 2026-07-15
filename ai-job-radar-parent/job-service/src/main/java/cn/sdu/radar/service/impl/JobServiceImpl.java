@@ -3,6 +3,7 @@ package cn.sdu.radar.service.impl;
 import cn.sdu.radar.exception.BusinessException;
 import cn.sdu.radar.mapper.JobMapper;
 import cn.sdu.radar.pojo.Job;
+import cn.sdu.radar.search.JobSearchService;
 import cn.sdu.radar.service.JobService;
 import cn.sdu.radar.vo.JobSummaryVO;
 import cn.sdu.radar.vo.PageResult;
@@ -19,10 +20,12 @@ import java.util.stream.Collectors;
 @Service
 public class JobServiceImpl implements JobService {
     private final JobMapper jobMapper;
+    private final JobSearchService jobSearchService;
 
     @Autowired
-    public JobServiceImpl(JobMapper jobMapper) {
+    public JobServiceImpl(JobMapper jobMapper, JobSearchService jobSearchService) {
         this.jobMapper = jobMapper;
+        this.jobSearchService = jobSearchService;
     }
 
     @Override
@@ -31,6 +34,17 @@ public class JobServiceImpl implements JobService {
                                            long page, long size) {
         if (page < 1 || size < 1 || size > 50) {
             throw new BusinessException(400, "分页参数不正确");
+        }
+        if (StringUtils.hasText(keyword)) {
+            try {
+                PageResult<JobSummaryVO> result = jobSearchService.search(
+                        keyword, city, minSalary, page, size);
+                if (result != null) {
+                    return result;
+                }
+            } catch (RuntimeException exception) {
+                // Elasticsearch不可用时继续执行原MyBatis Plus查询。
+            }
         }
         QueryWrapper<Job> query = new QueryWrapper<>();
         query.eq("status", "OPEN");

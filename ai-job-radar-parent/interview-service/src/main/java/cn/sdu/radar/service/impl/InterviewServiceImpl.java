@@ -1,6 +1,11 @@
 package cn.sdu.radar.service.impl;
 
+import cn.sdu.radar.ai.dto.AiEvaluationRequest;
+import cn.sdu.radar.ai.dto.AiEvaluationResponse;
+import cn.sdu.radar.ai.dto.AiQuestionRequest;
+import cn.sdu.radar.ai.dto.AiQuestionResponse;
 import cn.sdu.radar.exception.BusinessException;
+import cn.sdu.radar.feign.AiClient;
 import cn.sdu.radar.feign.JobClient;
 import cn.sdu.radar.mapper.InterviewAnswerMapper;
 import cn.sdu.radar.mapper.InterviewQuestionMapper;
@@ -35,16 +40,19 @@ public class InterviewServiceImpl implements InterviewService {
     private final InterviewQuestionMapper questionMapper;
     private final InterviewAnswerMapper answerMapper;
     private final JobClient jobClient;
+    private final AiClient aiClient;
 
     @Autowired
     public InterviewServiceImpl(InterviewSessionMapper sessionMapper,
                                 InterviewQuestionMapper questionMapper,
                                 InterviewAnswerMapper answerMapper,
-                                JobClient jobClient) {
+                                JobClient jobClient,
+                                AiClient aiClient) {
         this.sessionMapper = sessionMapper;
         this.questionMapper = questionMapper;
         this.answerMapper = answerMapper;
         this.jobClient = jobClient;
+        this.aiClient = aiClient;
     }
 
     @Override
@@ -85,13 +93,21 @@ public class InterviewServiceImpl implements InterviewService {
             throw new BusinessException(409, "该问题已经回答");
         }
 
-        int score = calculateScore(input.getAnswer(), question.getReferenceKeywords());
+        JobSummaryVO job = requireJob(session.getJobId());
+        AiEvaluationResponse ai = aiEvaluation(job, question, input.getAnswer());
+        boolean aiUsed = validEvaluation(ai);
+        int score = aiUsed ? ai.getScore()
+                : calculateScore(input.getAnswer(), question.getReferenceKeywords());
         InterviewAnswer answer = new InterviewAnswer();
         answer.setSessionId(sessionId);
         answer.setQuestionId(input.getQuestionId());
         answer.setAnswer(input.getAnswer().trim());
         answer.setScore(score);
-        answer.setFeedback(feedback(score));
+        answer.setFeedback(aiUsed ? ai.getSuggestion() : feedback(score));
+        answer.setStrengths(aiUsed ? pack(ai.getStrengths()) : "");
+        answer.setWeaknesses(aiUsed ? pack(ai.getWeaknesses()) : "");
+        answer.setSuggestion(aiUsed ? ai.getSuggestion() : feedback(score));
+        answer.setAiUsed(aiUsed);
         answer.setCreatedAt(LocalDateTime.now());
         answerMapper.insert(answer);
         completeSessionWhenReady(session);
@@ -137,6 +153,14 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     private List<InterviewQuestion> createQuestions(Long sessionId, JobSummaryVO job) {
+        List<String> aiQuestions = aiQuestions(job);
+        if (aiQuestions.size() == 4) {
+            List<InterviewQuestion> questions = new ArrayList<>();
+            for (int i = 0; i < aiQuestions.size(); i++) {
+                questions.add(question(sessionId, i + 1, aiQuestions.get(i), job.getRequirements()));
+            }
+            return questions;
+        }
         List<InterviewQuestion> questions = new ArrayList<>();
         questions.add(question(sessionId, 1,
                 "请做一个两分钟的自我介绍，并说明为什么应聘“" + job.getTitle() + "”。",
@@ -151,6 +175,47 @@ public class InterviewServiceImpl implements InterviewService {
                 "如果线上功能突然出现异常，你会如何定位并解决问题？",
                 "分析,日志,方案,验证"));
         return questions;
+    }
+
+    private List<String> aiQuestions(JobSummaryVO job) {
+        AiQuestionRequest request = new AiQuestionRequest();
+        request.setJobId(job.getId());
+        request.setJobTitle(job.getTitle());
+        request.setJobDescription(job.getDescription());
+        request.setJobSkills(job.getRequirements());
+        try {
+            CommonResult<AiQuestionResponse> result = aiClient.questions(request);
+            AiQuestionResponse response = result != null && result.getCode() == 200
+                    ? result.getData() : null;
+            if (response == null || !response.isAvailable() || response.getQuestions() == null
+                    || response.getQuestions().size() != 4
+                    || response.getQuestions().stream().anyMatch(item -> !StringUtils.hasText(item))) {
+                return Collections.emptyList();
+            }
+            return response.getQuestions();
+        } catch (RuntimeException exception) {
+            return Collections.emptyList();
+        }
+    }
+
+    private AiEvaluationResponse aiEvaluation(JobSummaryVO job, InterviewQuestion question,
+                                              String answer) {
+        AiEvaluationRequest request = new AiEvaluationRequest();
+        request.setJobTitle(job.getTitle());
+        request.setJobSkills(job.getRequirements());
+        request.setQuestion(question.getQuestion());
+        request.setAnswer(answer);
+        try {
+            CommonResult<AiEvaluationResponse> result = aiClient.evaluate(request);
+            return result != null && result.getCode() == 200 ? result.getData() : null;
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private boolean validEvaluation(AiEvaluationResponse response) {
+        return response != null && response.isAvailable() && response.getScore() != null
+                && response.getScore() >= 0 && response.getScore() <= 100;
     }
 
     private InterviewQuestion question(Long sessionId, int order, String text, String keywords) {
@@ -189,6 +254,26 @@ public class InterviewServiceImpl implements InterviewService {
             return "回答覆盖了部分要点，可以补充更具体的项目细节。";
         }
         return "建议补充具体案例，并按照背景、行动、结果组织回答。";
+    }
+
+    private String pack(List<String> values) {
+        return values == null ? "" : values.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .collect(Collectors.joining("\n"));
+    }
+
+    private List<String> unpack(String value) {
+        if (!StringUtils.hasText(value)) {
+            return Collections.emptyList();
+        }
+        List<String> values = new ArrayList<>();
+        for (String item : value.split("\\n")) {
+            if (StringUtils.hasText(item)) {
+                values.add(item.trim());
+            }
+        }
+        return values;
     }
 
     private void completeSessionWhenReady(InterviewSession session) {
@@ -244,6 +329,10 @@ public class InterviewServiceImpl implements InterviewService {
         vo.setAnswer(answer.getAnswer());
         vo.setScore(answer.getScore());
         vo.setFeedback(answer.getFeedback());
+        vo.setStrengths(unpack(answer.getStrengths()));
+        vo.setWeaknesses(unpack(answer.getWeaknesses()));
+        vo.setSuggestion(answer.getSuggestion());
+        vo.setAiUsed(Boolean.TRUE.equals(answer.getAiUsed()));
         vo.setCreatedAt(answer.getCreatedAt());
         return vo;
     }

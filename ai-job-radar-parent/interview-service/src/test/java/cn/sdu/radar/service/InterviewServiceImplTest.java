@@ -1,5 +1,8 @@
 package cn.sdu.radar.service;
 
+import cn.sdu.radar.ai.dto.AiEvaluationResponse;
+import cn.sdu.radar.ai.dto.AiQuestionResponse;
+import cn.sdu.radar.feign.AiClient;
 import cn.sdu.radar.feign.JobClient;
 import cn.sdu.radar.mapper.InterviewAnswerMapper;
 import cn.sdu.radar.mapper.InterviewQuestionMapper;
@@ -31,6 +34,7 @@ class InterviewServiceImplTest {
     private InterviewQuestionMapper questionMapper;
     private InterviewAnswerMapper answerMapper;
     private JobClient jobClient;
+    private AiClient aiClient;
     private InterviewServiceImpl interviewService;
     private JobSummaryVO job;
 
@@ -40,8 +44,9 @@ class InterviewServiceImplTest {
         questionMapper = mock(InterviewQuestionMapper.class);
         answerMapper = mock(InterviewAnswerMapper.class);
         jobClient = mock(JobClient.class);
+        aiClient = mock(AiClient.class);
         interviewService = new InterviewServiceImpl(
-                sessionMapper, questionMapper, answerMapper, jobClient);
+                sessionMapper, questionMapper, answerMapper, jobClient, aiClient);
         job = new JobSummaryVO();
         job.setId(5L);
         job.setTitle("Java后端开发");
@@ -89,6 +94,56 @@ class InterviewServiceImplTest {
         assertEquals(100, result.getScore());
         assertTrue(result.getFeedback().contains("充分"));
         verify(answerMapper).insert(any(InterviewAnswer.class));
+    }
+
+    @Test
+    void createsFourQuestionsReturnedByAi() {
+        AiQuestionResponse ai = new AiQuestionResponse();
+        ai.setAvailable(true);
+        ai.setQuestions(Arrays.asList("请介绍项目", "如何设计接口", "如何处理缓存", "如何排查故障"));
+        when(aiClient.questions(any())).thenReturn(CommonResult.success(ai));
+
+        interviewService.create(1L, 5L);
+
+        ArgumentCaptor<InterviewQuestion> captor = ArgumentCaptor.forClass(InterviewQuestion.class);
+        verify(questionMapper, org.mockito.Mockito.times(4)).insert(captor.capture());
+        assertEquals("请介绍项目", captor.getAllValues().get(0).getQuestion());
+        assertEquals("如何排查故障", captor.getAllValues().get(3).getQuestion());
+    }
+
+    @Test
+    void usesStructuredAiEvaluationWhenAvailable() {
+        InterviewSession session = new InterviewSession();
+        session.setId(7L);
+        session.setUserId(1L);
+        session.setJobId(5L);
+        session.setStatus("IN_PROGRESS");
+        InterviewQuestion question = new InterviewQuestion();
+        question.setId(9L);
+        question.setSessionId(7L);
+        question.setQuestion("如何设计稳定的接口？");
+        question.setReferenceKeywords("Java,Spring Boot,MySQL");
+        when(sessionMapper.selectById(7L)).thenReturn(session);
+        when(questionMapper.selectById(9L)).thenReturn(question);
+        when(answerMapper.selectCount(any())).thenReturn(0);
+        when(questionMapper.selectCount(any())).thenReturn(4);
+        AiEvaluationResponse ai = new AiEvaluationResponse();
+        ai.setAvailable(true);
+        ai.setScore(92);
+        ai.setStrengths(Arrays.asList("结构清楚"));
+        ai.setWeaknesses(Arrays.asList("缺少压测数据"));
+        ai.setSuggestion("补充性能指标");
+        when(aiClient.evaluate(any())).thenReturn(CommonResult.success(ai));
+        InterviewAnswerDTO input = new InterviewAnswerDTO();
+        input.setQuestionId(9L);
+        input.setAnswer("我会先明确接口契约，再做参数校验、异常处理和压测。");
+
+        InterviewAnswerVO result = interviewService.answer(1L, 7L, input);
+
+        assertEquals(92, result.getScore());
+        assertTrue(result.isAiUsed());
+        assertEquals("结构清楚", result.getStrengths().get(0));
+        assertEquals("补充性能指标", result.getSuggestion());
     }
 
     private InterviewAnswer answer(int score) {

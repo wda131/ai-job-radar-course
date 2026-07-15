@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $parent = (Resolve-Path (Join-Path $PSScriptRoot '..\ai-job-radar-parent')).Path
-$services = @('user-service', 'job-service', 'match-service', 'application-service',
+$services = @('user-service', 'job-service', 'ai-service', 'match-service', 'application-service',
     'interview-service', 'notification-service', 'gateway')
 $logs = Join-Path $parent 'logs'
 New-Item -ItemType Directory -Force -Path $logs | Out-Null
@@ -22,4 +22,4 @@ foreach ($service in $services) {
         -RedirectStandardError (Join-Path $logs "$service.err.log")
 }
 
-Write-Host 'Backend started: Gateway plus six business services. Logs are under ai-job-radar-parent/logs.'
+Write-Host 'Backend started: Gateway, six business services, and ai-service. Logs are under ai-job-radar-parent/logs.'

@@ -3,6 +3,7 @@ package cn.sdu.radar.service;
 import cn.sdu.radar.exception.BusinessException;
 import cn.sdu.radar.mapper.JobMapper;
 import cn.sdu.radar.pojo.Job;
+import cn.sdu.radar.search.JobSearchService;
 import cn.sdu.radar.service.impl.JobServiceImpl;
 import cn.sdu.radar.vo.JobSummaryVO;
 import cn.sdu.radar.vo.PageResult;
@@ -22,19 +23,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class JobServiceImplTest {
 
     private JobMapper jobMapper;
+    private JobSearchService jobSearchService;
     private JobServiceImpl jobService;
     private Job job;
 
     @BeforeEach
     void setUp() {
         jobMapper = mock(JobMapper.class);
-        jobService = new JobServiceImpl(jobMapper);
+        jobSearchService = mock(JobSearchService.class);
+        jobService = new JobServiceImpl(jobMapper, jobSearchService);
         job = new Job();
         job.setId(10L);
         job.setTitle("Java后端开发实习生");
@@ -104,5 +108,40 @@ class JobServiceImplTest {
 
         assertEquals("jobs", search.getAnnotation(Cacheable.class).cacheNames()[0]);
         assertEquals("job-detail", detail.getAnnotation(Cacheable.class).cacheNames()[0]);
+    }
+
+    @Test
+    void keywordSearchUsesElasticsearchWhenAvailable() {
+        JobSummaryVO summary = new JobSummaryVO();
+        summary.setId(10L);
+        summary.setTitle("Java后端开发实习生");
+        PageResult<JobSummaryVO> elasticsearchResult = new PageResult<>(
+                Collections.singletonList(summary), 1, 1, 8);
+        when(jobSearchService.search("Java", "", null, 1, 8))
+                .thenReturn(elasticsearchResult);
+
+        PageResult<JobSummaryVO> result = jobService.search("Java", "", null, 1, 8);
+
+        assertEquals("Java后端开发实习生", result.getRecords().get(0).getTitle());
+        verify(jobMapper, never()).selectPage(any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void elasticsearchFailureFallsBackToMybatis() {
+        when(jobSearchService.search("Java", "", null, 1, 8))
+                .thenThrow(new IllegalStateException("elasticsearch offline"));
+        when(jobMapper.selectPage(any(Page.class), any(QueryWrapper.class)))
+                .thenAnswer(invocation -> {
+                    Page<Job> page = invocation.getArgument(0);
+                    page.setRecords(Collections.singletonList(job));
+                    page.setTotal(1);
+                    return page;
+                });
+
+        PageResult<JobSummaryVO> result = jobService.search("Java", "", null, 1, 8);
+
+        assertEquals(1, result.getTotal());
+        verify(jobMapper).selectPage(any(Page.class), any(QueryWrapper.class));
     }
 }

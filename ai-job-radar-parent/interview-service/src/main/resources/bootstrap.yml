@@ -30,3 +30,6 @@ feign:
       default:
         connectTimeout: 3000
         readTimeout: 5000
+      ai-service:
+        connectTimeout: 3000
+        readTimeout: 50000

@@ -1,6 +1,9 @@
 package cn.sdu.radar.service.impl;
 
+import cn.sdu.radar.ai.dto.AiMatchRequest;
+import cn.sdu.radar.ai.dto.AiMatchResponse;
 import cn.sdu.radar.exception.BusinessException;
+import cn.sdu.radar.feign.AiClient;
 import cn.sdu.radar.feign.JobClient;
 import cn.sdu.radar.feign.UserClient;
 import cn.sdu.radar.mapper.MatchResultMapper;
@@ -17,6 +20,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -27,13 +31,15 @@ import java.util.stream.Collectors;
 public class MatchServiceImpl implements MatchService {
     private final UserClient userClient;
     private final JobClient jobClient;
+    private final AiClient aiClient;
     private final MatchResultMapper resultMapper;
 
     @Autowired
-    public MatchServiceImpl(UserClient userClient, JobClient jobClient,
+    public MatchServiceImpl(UserClient userClient, JobClient jobClient, AiClient aiClient,
                             MatchResultMapper resultMapper) {
         this.userClient = userClient;
         this.jobClient = jobClient;
+        this.aiClient = aiClient;
         this.resultMapper = resultMapper;
     }
 
@@ -62,15 +68,27 @@ public class MatchServiceImpl implements MatchService {
                 job.getSalaryMin(), job.getSalaryMax()) ? 15 : 0;
         int experienceScore = safe(profile.getExperienceYears()) >= safe(job.getExperienceYears())
                 ? 10 : 0;
-        int score = Math.min(100, skillScore + cityScore + salaryScore + experienceScore);
+        int ruleScore = Math.min(100, skillScore + cityScore + salaryScore + experienceScore);
+        AiMatchResponse ai = aiMatch(profile, job, ruleScore);
+        boolean aiUsed = validAi(ai);
+        int score = aiUsed
+                ? (int) Math.round(ruleScore * 0.70 + ai.getSemanticScore() * 0.30)
+                : ruleScore;
 
         MatchResult entity = new MatchResult();
         entity.setUserId(userId);
         entity.setJobId(jobId);
         entity.setScore(score);
+        entity.setRuleScore(ruleScore);
+        entity.setSemanticScore(aiUsed ? ai.getSemanticScore() : null);
+        entity.setAiUsed(aiUsed);
         entity.setMatchedSkills(String.join(",", matched));
         entity.setMissingSkills(String.join(",", missing));
-        entity.setSummary(summary(score, missing));
+        entity.setSummary(aiUsed && StringUtils.hasText(ai.getSummary())
+                ? ai.getSummary() : summary(ruleScore, missing));
+        entity.setStrengths(aiUsed ? pack(ai.getStrengths()) : "");
+        entity.setGaps(aiUsed ? pack(ai.getGaps()) : "");
+        entity.setSuggestions(aiUsed ? pack(ai.getSuggestions()) : "");
         entity.setCreatedAt(LocalDateTime.now());
         resultMapper.insert(entity);
         return toVO(entity, job);
@@ -132,13 +150,60 @@ public class MatchServiceImpl implements MatchService {
         return level + "。建议补充：" + String.join("、", missing) + "。";
     }
 
+    private AiMatchResponse aiMatch(UserProfileVO profile, JobSummaryVO job, int ruleScore) {
+        AiMatchRequest request = new AiMatchRequest();
+        request.setUserSkills(profile.getSkills());
+        request.setProfileSummary(profile.getIntroduction());
+        request.setJobTitle(job.getTitle());
+        request.setJobDescription(job.getDescription());
+        request.setJobSkills(job.getRequirements());
+        request.setRuleScore(ruleScore);
+        try {
+            CommonResult<AiMatchResponse> result = aiClient.explain(request);
+            return result != null && result.getCode() == 200 ? result.getData() : null;
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private boolean validAi(AiMatchResponse ai) {
+        return ai != null && ai.isAvailable() && ai.getSemanticScore() != null
+                && ai.getSemanticScore() >= 0 && ai.getSemanticScore() <= 100;
+    }
+
+    private String pack(List<String> values) {
+        return values == null ? "" : values.stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .collect(Collectors.joining("\n"));
+    }
+
+    private List<String> unpack(String value) {
+        if (!StringUtils.hasText(value)) {
+            return Collections.emptyList();
+        }
+        List<String> values = new ArrayList<>();
+        for (String item : value.split("\\n")) {
+            if (StringUtils.hasText(item)) {
+                values.add(item.trim());
+            }
+        }
+        return values;
+    }
+
     private MatchReportVO toVO(MatchResult result, JobSummaryVO job) {
         MatchReportVO vo = new MatchReportVO();
         vo.setId(result.getId());
         vo.setScore(result.getScore());
+        vo.setRuleScore(result.getRuleScore() == null ? result.getScore() : result.getRuleScore());
+        vo.setSemanticScore(result.getSemanticScore());
+        vo.setAiUsed(Boolean.TRUE.equals(result.getAiUsed()));
         vo.setMatchedSkills(result.getMatchedSkills());
         vo.setMissingSkills(result.getMissingSkills());
         vo.setSummary(result.getSummary());
+        vo.setStrengths(unpack(result.getStrengths()));
+        vo.setGaps(unpack(result.getGaps()));
+        vo.setSuggestions(unpack(result.getSuggestions()));
         vo.setCreatedAt(result.getCreatedAt());
         vo.setJob(job);
         return vo;

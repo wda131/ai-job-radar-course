@@ -14,5 +14,9 @@ public class InterviewAnswer {
     private String answer;
     private Integer score;
     private String feedback;
+    private String strengths;
+    private String weaknesses;
+    private String suggestion;
+    private Boolean aiUsed;
     private LocalDateTime createdAt;
 }

@@ -5,6 +5,7 @@ import { answerInterview, getInterview, getInterviews } from '../api'
 import NoticeBar from '../components/NoticeBar.vue'
 import PageHeader from '../components/PageHeader.vue'
 import {
+  aiSourceState,
   chooseInterviewQuestionId,
   chooseInterviewSessionId,
   chooseNextInterviewQuestionId
@@ -20,6 +21,7 @@ const selectedQuestion = computed(() => active.value?.questions?.find(
   question => String(question.id) === String(selectedQuestionId.value)
 ))
 const completed = computed(() => active.value?.questions?.every(question => question.answer))
+const sourceState = aiUsed => aiSourceState(Boolean(aiUsed))
 
 const load = async () => sessions.value = await getInterviews()
 const setActive = session => {
@@ -117,14 +119,28 @@ onMounted(initialize)
           <small>本题回答与反馈 · QUESTION {{ selectedQuestion.questionOrder }}</small>
           <h2>{{ selectedQuestion.question }}</h2>
           <div class="review-answer"><b>你的回答</b><p>{{ selectedQuestion.answer.answer }}</p></div>
-          <footer><span>评分 {{ selectedQuestion.answer.score }}</span><p>{{ selectedQuestion.answer.feedback }}</p></footer>
+          <footer class="review-feedback">
+            <div class="feedback-heading">
+              <span>评分 {{ selectedQuestion.answer.score }}</span>
+              <i class="ai-source" :class="sourceState(selectedQuestion.answer.aiUsed).className">
+                {{ sourceState(selectedQuestion.answer.aiUsed).label }}
+              </i>
+            </div>
+            <p>{{ selectedQuestion.answer.feedback }}</p>
+            <div v-if="selectedQuestion.answer.aiUsed" class="feedback-grid">
+              <section><b>回答优势</b><ul><li v-for="item in selectedQuestion.answer.strengths" :key="item">{{ item }}</li></ul></section>
+              <section><b>可改进点</b><ul><li v-for="item in selectedQuestion.answer.weaknesses" :key="item">{{ item }}</li></ul></section>
+              <section><b>优化建议</b><p>{{ selectedQuestion.answer.suggestion }}</p></section>
+            </div>
+            <div v-else class="fallback-feedback">本题使用课程关键词规则评分；启动 Ollama 后会自动切换为本地大模型反馈。</div>
+          </footer>
         </div>
 
         <div class="answer-history">
           <article v-for="question in active.questions.filter(item => item.answer)" :key="question.id">
             <b>{{ question.questionOrder }}. {{ question.question }}</b>
             <p>{{ question.answer.answer }}</p>
-            <footer><span>评分 {{ question.answer.score }}</span>{{ question.answer.feedback }}</footer>
+            <footer><span>评分 {{ question.answer.score }}</span><i class="history-source">{{ sourceState(question.answer.aiUsed).label }}</i>{{ question.answer.feedback }}</footer>
           </article>
         </div>
       </section>
@@ -227,4 +243,13 @@ onMounted(initialize)
 .question-review > footer p { margin: 8px 0 0; color: #c1d0dd; font-size: 11px; line-height: 1.7; }
 .question-review > footer { margin-top: 10px; border-color: #315e50; background: #53d28c0b; }
 .question-review > footer span { color: #76e5bc; font-weight: 800; }
+.feedback-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.feedback-heading .ai-source { font-style: normal; }
+.feedback-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.feedback-grid section { padding: 11px; border: 1px solid #29475b; border-radius: 7px; background: #07131f; }
+.feedback-grid b { color: #8fd9d2; font-size: 10px; }
+.feedback-grid ul { margin: 7px 0 0; padding-left: 15px; color: #aebdcc; font-size: 10px; line-height: 1.7; }
+.feedback-grid section > p { color: #aebdcc; font-size: 10px; line-height: 1.7; }
+.fallback-feedback { margin-top: 12px; padding: 10px; border-radius: 6px; background: #f3b85b0d; color: #d9b877; font-size: 9px; }
+.history-source { margin-right: 8px; color: #6f879c; font-size: 8px; font-style: normal; }
 </style>

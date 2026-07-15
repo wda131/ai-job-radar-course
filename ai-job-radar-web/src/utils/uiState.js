@@ -9,6 +9,10 @@ export const jobActionState = (jobId, favoriteIds, applicationJobIds) => {
   }
 }
 
+export const aiSourceState = aiUsed => aiUsed
+  ? { label: 'Ollama 本地大模型', className: 'ai' }
+  : { label: '规则引擎兜底', className: 'fallback' }
+
 export const chooseInterviewSessionId = (sessions, requestedId) => {
   const requested = requestedId == null ? '' : String(requestedId)
   const match = sessions.find(session => String(session.id) === requested)

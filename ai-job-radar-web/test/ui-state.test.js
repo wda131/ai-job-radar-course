@@ -2,11 +2,23 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import {
+  aiSourceState,
   chooseNextInterviewQuestionId,
   chooseInterviewQuestionId,
   chooseInterviewSessionId,
   jobActionState
 } from '../src/utils/uiState.js'
+
+test('labels local model output and fallback output clearly', () => {
+  assert.deepEqual(aiSourceState(true), {
+    label: 'Ollama 本地大模型',
+    className: 'ai'
+  })
+  assert.deepEqual(aiSourceState(false), {
+    label: '规则引擎兜底',
+    className: 'fallback'
+  })
+})
 
 test('marks favorited and applied jobs', () => {
   assert.deepEqual(jobActionState(7, new Set([7]), new Set([7])), {
@@ -113,4 +125,14 @@ test('exposes the notification center through api router and navigation', () => 
   assert.match(api, /readAllNotifications/)
   assert.match(router, /\/notifications/)
   assert.match(app, /消息中心/)
+})
+
+test('allows local model requests to finish without changing API behavior', () => {
+  const request = readFileSync(new URL('../src/api/request.js', import.meta.url), 'utf8')
+  assert.match(request, /timeout:\s*60000/)
+})
+
+test('binds the presentation server to an IPv4 address', () => {
+  const startup = readFileSync(new URL('../../scripts/start-frontend.ps1', import.meta.url), 'utf8')
+  assert.match(startup, /--host',\s*'0\.0\.0\.0'/)
 })

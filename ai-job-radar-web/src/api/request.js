@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const request = axios.create({ baseURL: 'http://localhost:9000', timeout: 10000 })
+const request = axios.create({ baseURL: 'http://localhost:9000', timeout: 60000 })
 
 request.interceptors.request.use(config => {
   const token = localStorage.getItem('radar_token')
