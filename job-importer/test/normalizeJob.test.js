@@ -10,7 +10,8 @@ test('parses monthly K salary ranges', () => {
 test('normalizes experience and clamps import limit', () => {
   assert.equal(parseExperience('3-5年'), 3)
   assert.equal(parseExperience('应届生'), 0)
-  assert.equal(normalizeLimit('50'), 20)
+  assert.equal(normalizeLimit('80'), 50)
+  assert.equal(normalizeLimit('0'), 1)
 })
 
 test('builds a validated BOSS import record', () => {

@@ -101,14 +101,15 @@ class JobImportServiceTest {
     }
 
     @Test
-    void rejectsBatchLargerThanTwentyRows() {
+    void rejectsBatchLargerThanFiftyRows() {
         List<JobImportDTO> jobs = new ArrayList<>();
-        for (int index = 0; index < 21; index++) jobs.add(validJob("id-" + index));
+        for (int index = 0; index < 51; index++) jobs.add(validJob("id-" + index));
 
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> service.importJobs(jobs));
 
         assertEquals(400, exception.getCode());
+        assertEquals("每次必须导入 1 到 50 个岗位", exception.getMessage());
     }
 
     @Test

@@ -19,7 +19,7 @@ export function parseExperience(value) {
 
 export function normalizeLimit(value) {
   const parsed = Number.parseInt(value || '10', 10)
-  return Math.min(20, Math.max(1, Number.isFinite(parsed) ? parsed : 10))
+  return Math.min(50, Math.max(1, Number.isFinite(parsed) ? parsed : 10))
 }
 
 export function normalizeJob(raw, fallbackCity = '') {

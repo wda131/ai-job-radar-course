@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "AI 求职雷达 BOSS 导入器",
+  "version": "1.0.0",
+  "description": "将普通 Chrome 当前页面中已加载的 BOSS 岗位导入本地课程项目。",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://www.zhipin.com/*",
+    "http://127.0.0.1:9011/*"
+  ],
+  "action": {
+    "default_title": "导入当前 BOSS 岗位",
+    "default_popup": "popup.html",
+    "default_icon": "icons/radar.svg"
+  },
+  "icons": {
+    "16": "icons/radar.svg",
+    "48": "icons/radar.svg",
+    "128": "icons/radar.svg"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.zhipin.com/web/geek/job*",
+        "https://www.zhipin.com/web/geek/jobs*"
+      ],
+      "js": ["extractor.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

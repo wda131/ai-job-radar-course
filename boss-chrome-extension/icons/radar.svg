@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="求职雷达">
+  <rect width="128" height="128" rx="28" fill="#07151d"/>
+  <circle cx="64" cy="64" r="43" fill="none" stroke="#163f46" stroke-width="8"/>
+  <circle cx="64" cy="64" r="25" fill="none" stroke="#163f46" stroke-width="6"/>
+  <path d="M64 64 102 42A44 44 0 0 1 108 64Z" fill="#21d4c2" opacity=".42"/>
+  <path d="M64 64 102 42" stroke="#21d4c2" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="64" cy="64" r="8" fill="#21d4c2"/>
+  <circle cx="98" cy="44" r="7" fill="#21d4c2"/>
+</svg>

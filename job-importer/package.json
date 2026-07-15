@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "import:boss": "node src/cli.js"
+    "import:boss": "node src/cli.js",
+    "bridge:boss": "node src/bridge.js"
   },
   "dependencies": {
     "playwright": "1.49.1"

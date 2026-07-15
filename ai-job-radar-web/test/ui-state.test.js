@@ -144,3 +144,15 @@ test('binds the presentation server to an IPv4 address', () => {
   const startup = readFileSync(new URL('../../scripts/start-frontend.ps1', import.meta.url), 'utf8')
   assert.match(startup, /--host',\s*'0\.0\.0\.0'/)
 })
+
+test('documents the Chrome extension bridge without exposing BOSS credentials', () => {
+  const launcher = readFileSync(new URL('../../scripts/start-boss-bridge.ps1', import.meta.url), 'utf8')
+  const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8')
+
+  assert.match(launcher, /bridge:boss/)
+  assert.match(launcher, /127\.0\.0\.1/)
+  assert.match(readme, /chrome:\/\/extensions/)
+  assert.match(readme, /加载已解压的扩展程序/)
+  assert.match(readme, /最多 50 条/)
+  assert.doesNotMatch(launcher, /zhipin.*cookie|zp_token/i)
+})

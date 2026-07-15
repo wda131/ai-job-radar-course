@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="popup.css">
+  <title>BOSS 岗位导入</title>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/radar.svg" alt="">
+      <div>
+        <strong>AI 求职雷达</strong>
+        <small>当前页面真实岗位导入</small>
+      </div>
+    </header>
+    <p id="status" class="status" role="status">正在检查本地桥接程序……</p>
+    <p id="count" class="count">尚未检测岗位</p>
+    <div class="actions">
+      <button id="detect" type="button">检测当前页面</button>
+      <button id="import" type="button" disabled>导入当前页面</button>
+    </div>
+    <p class="hint">请先正常登录 BOSS 并滚动加载岗位，单次最多 50 条。</p>
+  </main>
+  <script src="bridge-client.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

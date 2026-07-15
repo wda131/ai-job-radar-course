@@ -115,46 +115,49 @@ Compose 包含 MySQL 8.0.26、Nacos 2.1.0、Redis 6.2、RabbitMQ 3.12 和 Elasti
 mysql --default-character-set=utf8mb4 -uroot -proot < sql/upgrade-ai-search.sql
 ```
 
-## BOSS 岗位受控导入（可选）
+## BOSS 普通 Chrome 岗位导入（可选）
 
-`job-importer` 是独立的 Node.js 辅助工具，不属于新增微服务；它停止时不影响职位检索、匹配、收藏、投递和面试。工具只读取用户已经在可见 Chromium 页面中打开的岗位卡片，每次最多 20 条，然后通过 Gateway 和 JWT 调用 `job-service`。MySQL 按 `source + external_id` 去重，同一岗位再次导入会更新而不会重复新增，同时清理 Redis 职位缓存并尽力同步 Elasticsearch。
+`boss-chrome-extension` 和 `job-importer` 本地桥接是 Node.js 辅助工具，不属于新增微服务；停止它们不影响职位检索、匹配、收藏、投递和面试。扩展只读取用户在普通 Chrome 当前 BOSS 搜索页中已经看见并加载完成的岗位卡片，单次最多 50 条，再由仅监听 `127.0.0.1:9011` 的桥接程序通过 Gateway 和 JWT 调用 `job-service`。
 
-首次使用安装固定版本依赖与 Chromium：
+MySQL 按 `source + external_id` 去重，同一岗位再次导入会更新而不会重复新增，同时清理 Redis 职位缓存并尽力同步 Elasticsearch。导入字段包括岗位名称、公司、城市、薪资、经验、学历、技能/福利标签、来源链接和导入时间，职位卡片会显示 `BOSS` 来源标记。
+
+### 首次准备
+
+安装固定版本依赖，并对旧数据库执行一次迁移：
 
 ```powershell
 npm --prefix job-importer install
-npx --prefix job-importer playwright install chromium
-```
-
-当前数据库只需迁移一次：
-
-```powershell
 Get-Content .\sql\upgrade-boss-import.sql -Raw | mysql --default-character-set=utf8mb4 -uroot -proot ai_job_radar
 ```
 
-设置课程系统登录信息。脚本只把它们用于本机 Gateway 登录，不会打印账号、密码、JWT、Cookie 或浏览器存储：
+打开 `chrome://extensions`，开启右上角“开发者模式”，点击“加载已解压的扩展程序”，选择项目中的 `boss-chrome-extension` 目录。安装后建议把“AI 求职雷达 BOSS 导入器”固定到浏览器工具栏。
+
+### 每次真实导入
+
+1. 确认 Gateway 已在 `9000` 端口运行，在新 PowerShell 终端设置课程系统账号并启动桥接，保持该终端开启：
 
 ```powershell
 $env:API_BASE_URL = 'http://127.0.0.1:9000'
 $env:RADAR_USERNAME = 'student'
 $env:RADAR_PASSWORD = '123456'
+.\scripts\start-boss-bridge.ps1
 ```
 
-答辩时推荐先用本地 fixture 稳定演示完整导入链路：
+2. 用日常 Chrome 正常打开 BOSS 并自行登录，进入岗位搜索结果页；按需要向下滚动，让浏览器加载更多岗位。
+3. 点击扩展，先点“检测当前页面”，确认数量后点“导入当前页面”。扩展不会自动翻页，所以页面实际加载多少就导入多少，最多 50 条。
+4. 刷新 `http://127.0.0.1:5174/jobs`，即可看到带 `BOSS` 标记的岗位；重复导入相同岗位时会更新原记录。
+
+此流程不读取或导出 BOSS Cookie、令牌和登录凭据，不自动登录、翻页、聊天或投递，不调用非公开接口，也不绕过验证码、安全验证或访问限制。课程系统账号只用于本机 Gateway 登录，桥接不会在响应或日志中返回密码。
+
+### 离线展示备用方案
+
+BOSS 外部站点临时不可访问时，可用本地 fixture 演示同一后端导入、去重、缓存清理和搜索链路：
 
 ```powershell
 .\scripts\start-job-importer.ps1 --keyword Java --city 威海 --limit 2 --fixture job-importer/test/fixtures/boss-results.html
 ```
 
-需要检查真实站点时运行：
-
-```powershell
-.\scripts\start-job-importer.ps1 --keyword Java --city 威海 --limit 2
-```
-
-程序会打开可见浏览器并保留本机 `job-importer/.browser-data` 登录状态，用户自行扫码或登录。也可以传入本人有权访问的搜索结果地址：`--url 'https://www.zhipin.com/...'`。工具不绕过验证码、安全验证或访问限制，不使用隐身插件、代理，也不自动沟通或投递；检测到限制时会主动停止。页面结构变化时 fixture 自动化测试仍可用于课程展示，真实页面解析器则需要按当时公开页面结构维护。
-
-导入字段包括岗位名称、公司、城市、薪资、经验、学历、技能/福利标签、来源链接和导入时间。职位卡片会显示 `BOSS` 或 `本地数据` 来源标记。
+fixture 只用于稳定答辩，不应称为实时 BOSS 数据。
 
 ## 自动化验证
 

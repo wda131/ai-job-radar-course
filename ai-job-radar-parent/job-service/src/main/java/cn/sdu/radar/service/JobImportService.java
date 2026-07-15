@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class JobImportService {
-    private static final int MAX_BATCH_SIZE = 20;
+    private static final int MAX_BATCH_SIZE = 50;
 
     private final JobMapper jobMapper;
     private final JobSearchRepository jobSearchRepository;
@@ -38,7 +38,7 @@ public class JobImportService {
     @CacheEvict(cacheNames = {"jobs", "job-detail"}, allEntries = true)
     public JobImportResultVO importJobs(List<JobImportDTO> jobs) {
         if (jobs == null || jobs.isEmpty() || jobs.size() > MAX_BATCH_SIZE) {
-            throw new BusinessException(400, "每次必须导入 1 到 20 个岗位");
+            throw new BusinessException(400, "每次必须导入 1 到 50 个岗位");
         }
 
         int created = 0;
