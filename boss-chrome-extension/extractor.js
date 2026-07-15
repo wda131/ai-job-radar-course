@@ -25,14 +25,14 @@
       const externalId = externalIdFromUrl(sourceUrl)
       if (!externalId || seen.has(externalId)) continue
 
-      const jobInfo = texts(card, '.job-info li, .job-info span')
+      const jobInfo = texts(card, '.job-info li, .job-info span:not(.salary):not(.job-salary)')
       const tags = texts(card, '.tag-list li, .job-card-footer li, [class*="tag-list"] li')
       jobs.push({
         externalId,
         title: text(card, '.job-name'),
-        company: text(card, '.company-name'),
-        city: text(card, '.job-area'),
-        salary: text(card, '.salary'),
+        company: text(card, '.company-name, .boss-name'),
+        city: text(card, '.job-area, .company-location'),
+        salary: text(card, '.salary, .job-salary'),
         experience: jobInfo[0] || '',
         education: jobInfo[1] || '',
         description: '来自 BOSS 当前可见岗位列表，完整信息请查看来源链接',

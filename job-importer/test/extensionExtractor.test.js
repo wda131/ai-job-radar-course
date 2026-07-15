@@ -50,3 +50,38 @@ test('deduplicates external ids and caps the loaded page at fifty jobs', async (
     await browser.close()
   }
 })
+
+test('extracts the current BOSS card layout with boss and location fields', async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(`
+      <ul class="rec-job-list">
+        <li class="job-card-box">
+          <div class="job-info">
+            <div class="job-title clearfix">
+              <a class="job-name" href="https://www.zhipin.com/job_detail/current123.html">AI Agent 开发工程师</a>
+              <span class="job-salary">12-18K</span>
+            </div>
+            <ul class="tag-list"><li>1-3年</li><li>本科</li></ul>
+          </div>
+          <div class="job-card-footer">
+            <a class="boss-info"><span class="boss-name">当前页面公司</span></a>
+            <span class="company-location">济南·历下区</span>
+          </div>
+        </li>
+      </ul>`)
+    await page.addScriptTag({ path: extensionScript })
+
+    const jobs = await page.evaluate(() => globalThis.RadarBossExtractor.extractBossJobs(document, 50))
+
+    assert.equal(jobs.length, 1)
+    assert.equal(jobs[0].company, '当前页面公司')
+    assert.equal(jobs[0].city, '济南·历下区')
+    assert.equal(jobs[0].salary, '12-18K')
+    assert.equal(jobs[0].experience, '1-3年')
+    assert.equal(jobs[0].education, '本科')
+  } finally {
+    await browser.close()
+  }
+})
